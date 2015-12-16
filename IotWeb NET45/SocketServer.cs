@@ -20,6 +20,7 @@ namespace IotWeb.Server
 		// Instance variables
 		private bool m_running;
 		private ConnectionHandler m_handler;
+        private Socket m_listener;
 
 		public int Port { get; private set; }
 
@@ -51,49 +52,73 @@ namespace IotWeb.Server
 				m_running = true;
 			}
 			Port = port;
-			// Set up the listener and bind
-			Socket listener = new Socket(SocketType.Stream, ProtocolType.IP);
-			listener.Bind(new IPEndPoint(IPAddress.Any, port));
-			listener.Blocking = true;
-			listener.Listen(BackLog);
-			// Wait for incoming connections
-			while (m_running)
-			{
-				try
-				{
-					Socket client = listener.Accept();
-					if (m_handler != null)
-					{
-						string hostname = "0.0.0.0";
-						IPEndPoint endpoint = client.RemoteEndPoint as IPEndPoint;
-						if (endpoint != null) 
-							hostname = endpoint.Address.ToString();
-						ThreadPool.QueueUserWorkItem((arg) =>
-						{
-							try
-							{
-								m_handler(
-									this, 
-									hostname,
-									new NetworkStream(client, FileAccess.Read, false),
-									new NetworkStream(client, FileAccess.Write, false)
-									);
-							}
-							catch (Exception ex)
-							{
-								this.Log().Debug("Connection handler failed unexpectedly - {0}", ex.Message);
-							}
-							// Finally, we can close the socket
-							client.Shutdown(SocketShutdown.Both);
-							client.Close();
-						});
-					}
-				}
-				catch (Exception ex)
-				{
-					this.Log().Debug("Unexpected error while accepting connection request - {0}", ex.Message);
-				}
-			}
+            // Set up the listener and bind
+            ThreadPool.QueueUserWorkItem((arg) =>
+            {
+                m_listener = new Socket(SocketType.Stream, ProtocolType.IP);
+                m_listener.Bind(new IPEndPoint(IPAddress.Any, port));
+                m_listener.Blocking = true;
+                m_listener.ReceiveTimeout = 100;
+                m_listener.Listen(BackLog);
+                // Wait for incoming connections
+                while (true)
+                {
+                    lock (this)
+                    {
+                        if (!m_running)
+                            return;
+                    }
+                    try
+                    {
+                        Socket client;
+                        try
+                        {
+                            client = m_listener.Accept();
+                        }
+                        catch (TimeoutException)
+                        {
+                            // Allow recheck of running status
+                            continue;
+                        }
+                        if (m_handler != null)
+                        {
+                            string hostname = "0.0.0.0";
+                            IPEndPoint endpoint = client.RemoteEndPoint as IPEndPoint;
+                            if (endpoint != null)
+                                hostname = endpoint.Address.ToString();
+                            ThreadPool.QueueUserWorkItem((e) =>
+                            {
+                                try
+                                {
+                                    if (m_handler != null)
+                                    {
+                                        client.ReceiveTimeout = 0;
+                                        m_handler(
+                                            this,
+                                            hostname,
+                                            new NetworkStream(client, FileAccess.Read, false),
+                                            new NetworkStream(client, FileAccess.Write, false)
+                                            );
+                                    }
+                                    else
+                                        this.Log().Debug("No handler provided for connection requests.");
+                                }
+                                catch (Exception ex)
+                                {
+                                    this.Log().Debug("Connection handler failed unexpectedly - {0}", ex.Message);
+                                }
+                            // Finally, we can close the socket
+                            client.Shutdown(SocketShutdown.Both);
+                                client.Close();
+                            });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Log().Debug("Unexpected error while accepting connection request - {0}", ex.Message);
+                    }
+                }
+            });
 		}
 
 		public void Stop()
