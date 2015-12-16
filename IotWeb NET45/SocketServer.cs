@@ -12,8 +12,11 @@ using Splat;
 
 namespace IotWeb.Server
 {
-	public abstract class AbstractSocketServer : ISocketServer, IEnableLogger
+	public class SocketServer : ISocketServer, IEnableLogger
 	{
+		// Constants
+		private const int BackLog = 5; // Maximum pending requests
+
 		// Instance variables
 		private bool m_running;
 		private ConnectionHandler m_handler;
@@ -52,6 +55,7 @@ namespace IotWeb.Server
 			Socket listener = new Socket(SocketType.Stream, ProtocolType.IP);
 			listener.Bind(new IPEndPoint(IPAddress.Any, port));
 			listener.Blocking = true;
+			listener.Listen(BackLog);
 			// Wait for incoming connections
 			while (m_running)
 			{
@@ -68,29 +72,36 @@ namespace IotWeb.Server
 						{
 							try
 							{
-								NetworkStream input = new NetworkStream(client, FileAccess.Read, false);
-								NetworkStream output = new NetworkStream(client, FileAccess.Write, false);
-								m_handler(this, hostname, input, output);
+								m_handler(
+									this, 
+									hostname,
+									new NetworkStream(client, FileAccess.Read, false),
+									new NetworkStream(client, FileAccess.Write, false)
+									);
 							}
 							catch (Exception ex)
 							{
 								this.Log().Debug("Connection handler failed unexpectedly - {0}", ex.Message);
 							}
 							// Finally, we can close the socket
+							client.Shutdown(SocketShutdown.Both);
 							client.Close();
 						});
 					}
 				}
-				catch (Exception)
+				catch (Exception ex)
 				{
-					// TODO: Handle this somehow?
+					this.Log().Debug("Unexpected error while accepting connection request - {0}", ex.Message);
 				}
 			}
 		}
 
 		public void Stop()
 		{
-
+			lock (this)
+			{
+				m_running = false;
+			}
 		}
 
 	}
