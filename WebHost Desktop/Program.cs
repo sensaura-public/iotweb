@@ -11,7 +11,7 @@ namespace WebHost.Desktop
 	{
 		static void Main(string[] args)
 		{
-			EchoServer server = new EchoServer();
+			HttpServer server = new HttpServer();
 			server.Start(8000);
 		}
 	}
