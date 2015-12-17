@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using IotWeb.Common;
 using Splat;
@@ -11,6 +12,10 @@ namespace IotWeb.Common.Http
 {
 	class HttpRequestProcessor : IEnableLogger
 	{
+		// Regular expression for parsing the start line
+		private static Regex RequestStartLine = new Regex(@"^([a-zA-z]+)[ ]+([^ ]+)[ ]+[hH][tT][tT][pP]/([0-9]\.[0-9])$");
+
+		// States for the request parser
 		private enum RequestParseState
 		{
 			StartLine,
@@ -49,14 +54,19 @@ namespace IotWeb.Common.Http
 			// Parse the request first
 			RequestParseState state = RequestParseState.StartLine;
 			string line;
+			HttpRequest request;
+			HttpResponse response;
 			while (m_connected && (state != RequestParseState.Body))
 			{
 				// Keep trying to read a line
 				if (!ReadLine(input, out line))
 					continue;
-				switch(state) 
+				switch (state) 
 				{
 					case RequestParseState.StartLine:
+						request = ParseRequestLine(line);
+						if (request == null)
+							return; // Just let the connection close
 						state++;
 						break;
 					case RequestParseState.Headers:
@@ -68,6 +78,22 @@ namespace IotWeb.Common.Http
 		}
 
 		#region Internal Implementation
+		private HttpRequest ParseRequestLine(string line)
+		{
+			Match match;
+			lock (RequestStartLine)
+				match = RequestStartLine.Match(line);
+			if (match.Groups.Count != 4)
+				return null;
+			// Get the method used
+			HttpMethod method;
+			if (!Enum.TryParse<HttpMethod>(match.Groups[1].Value, true, out method))
+				return null;
+			HttpRequest request = new HttpRequest(method, match.Groups[2].Value);
+			// TODO: Should really check the HTTP version here as well
+			return request;
+		}
+
 		/// <summary>
 		/// Extract bytes from the input buffer (with an optional copy)
 		/// </summary>

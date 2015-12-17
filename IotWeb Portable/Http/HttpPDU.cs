@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,6 +15,11 @@ namespace IotWeb.Common.Http
 	/// </summary>
 	public class HttpPDU
 	{
+		/// <summary>
+		/// The cookies associated with the transaction.
+		/// </summary>
+		public readonly CookieCollection Cookies = new CookieCollection();
+
 		/// <summary>
 		/// The content type of the data associated with the operation
 		/// 
