@@ -36,7 +36,11 @@
   <ItemGroup>
     <Compile Include="Echo\BaseEchoServer.cs" />
     <Compile Include="Http\BaseHttpServer.cs" />
+    <Compile Include="Http\HttpMethod.cs" />
+    <Compile Include="Http\HttpPDU.cs" />
+    <Compile Include="Http\HttpRequest.cs" />
     <Compile Include="Http\HttpRequestProcessor.cs" />
+    <Compile Include="Http\HttpResponse.cs" />
     <Compile Include="IServer.cs" />
     <Compile Include="ISocketServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
