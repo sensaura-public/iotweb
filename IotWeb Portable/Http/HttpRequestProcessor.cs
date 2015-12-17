@@ -15,6 +15,9 @@ namespace IotWeb.Common.Http
 		// Regular expression for parsing the start line
 		private static Regex RequestStartLine = new Regex(@"^([a-zA-z]+)[ ]+([^ ]+)[ ]+[hH][tT][tT][pP]/([0-9]\.[0-9])$");
 
+		// Regular expression for parsing headers
+		private static Regex HeaderLine = new Regex(@"^([a-zA-Z][a-zA-Z0-9\-]*):(.*)");
+
 		// States for the request parser
 		private enum RequestParseState
 		{
@@ -24,6 +27,7 @@ namespace IotWeb.Common.Http
 		}
 
 		// Constants
+		private const int MaxRequestBody = 64 * 1024; // TODO: Should be user configurable
 		private const int InputBufferSize = 1024;
 		private const byte CR = 0x0d;
 		private const byte LF = 0x0a;
@@ -32,12 +36,14 @@ namespace IotWeb.Common.Http
 		private byte[] m_buffer;
 		private int m_index;
 		private bool m_connected;
+		private string m_lastHeader;
 
 		public HttpRequestProcessor()
 		{
 			m_buffer = new byte[InputBufferSize];
 			m_index = 0;
 			m_connected = true;
+			m_lastHeader = null;
 		}
 
 		/// <summary>
@@ -54,30 +60,120 @@ namespace IotWeb.Common.Http
 			// Parse the request first
 			RequestParseState state = RequestParseState.StartLine;
 			string line;
-			HttpRequest request;
-			HttpResponse response;
-			while (m_connected && (state != RequestParseState.Body))
+			HttpRequest request = null;
+			HttpException parseError = null;
+			try
 			{
-				// Keep trying to read a line
-				if (!ReadLine(input, out line))
-					continue;
-				switch (state) 
+				while (m_connected && (state != RequestParseState.Body))
 				{
-					case RequestParseState.StartLine:
-						request = ParseRequestLine(line);
-						if (request == null)
-							return; // Just let the connection close
-						state++;
-						break;
-					case RequestParseState.Headers:
-						if (line.Length==0)
+					// Keep trying to read a line
+					if (!ReadLine(input, out line))
+						continue;
+					switch (state)
+					{
+						case RequestParseState.StartLine:
+							request = ParseRequestLine(line);
+							if (request == null)
+								return; // Just let the connection close
 							state++;
-						break;
+							break;
+						case RequestParseState.Headers:
+							if (line.Length == 0)
+								state++;
+							else
+								ParseHeaderLine(request, line);
+							break;
+					}
 				}
 			}
+			catch (HttpException ex)
+			{
+				parseError = ex;
+			}
+			catch (Exception ex)
+			{
+				parseError = new HttpInternalServerErrorException("Error parsing request.");
+			}
+			// Read any associated body component
+			if ((parseError == null)&&request.Headers.ContainsKey(HttpHeaders.ContentType))
+			{
+				request.ContentType = request.Headers[HttpHeaders.ContentType];
+				try 
+				{
+					if (!request.Headers.ContainsKey(HttpHeaders.ContentLength))
+						throw new HttpLengthRequiredException();
+					int length;
+					if (!int.TryParse(request.Headers[HttpHeaders.ContentLength], out length))
+						throw new HttpLengthRequiredException();
+					request.ContentLength = length;
+					if (length > MaxRequestBody)
+						throw new HttpRequestEntityTooLargeException();
+					// Read the data in
+					MemoryStream content = new MemoryStream();
+					while (m_connected && (content.Length != length)) 
+					{
+						ReadData(input);
+						content.Write(m_buffer, 0, m_index);
+						ExtractBytes(m_index);
+					}
+					// Did the connection drop while reading?
+					if (!m_connected)
+						return;
+					// Reset the stream location and attach it to the request
+					content.Seek(0, SeekOrigin.Begin);
+					request.Content = content;
+				}
+				catch (HttpException ex)
+				{
+					parseError = ex;
+				}
+				catch (Exception ex)
+				{
+					parseError = new HttpInternalServerErrorException();
+				}
+
+			}
+			// We have at least a partial request, create the matching response
+			HttpResponse response = new HttpResponse();
+			if (parseError != null) 
+			{
+				// Can't continue, send a response back with the error information
+				response.ResponseCode = parseError.ResponseCode;
+				response.ResponseMessage = parseError.Message;
+				response.Send(output);
+				return;
+			}
+			// Process the cookies
+
+
+
 		}
 
 		#region Internal Implementation
+		private void ParseHeaderLine(HttpRequest request, string line)
+		{
+			if (line.StartsWith(" "))
+			{
+				// Continuation
+				if (m_lastHeader == null)
+					throw new HttpBadRequestException("Invalid header format.");
+				request.Headers[m_lastHeader] = request.Headers[m_lastHeader] + line;
+			}
+			else
+			{
+				Match match = HeaderLine.Match(line);
+				if (match.Groups.Count != 3)
+					throw new HttpBadRequestException("Cannot parse header.");
+				m_lastHeader = match.Groups[1].Value.Trim();
+				request.Headers[m_lastHeader] = match.Groups[2].Value.Trim();
+			}
+		}
+
+		/// <summary>
+		/// Parse the request start line
+		/// </summary>
+		/// <param name="line"></param>
+		/// <returns></returns>
 		private HttpRequest ParseRequestLine(string line)
 		{
 			Match match;

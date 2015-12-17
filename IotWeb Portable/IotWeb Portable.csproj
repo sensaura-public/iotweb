@@ -37,6 +37,7 @@
     <Compile Include="Echo\BaseEchoServer.cs" />
     <Compile Include="Http\BaseHttpServer.cs" />
     <Compile Include="Http\HttpException.cs" />
+    <Compile Include="Http\HttpHeaders.cs" />
     <Compile Include="Http\HttpMethod.cs" />
     <Compile Include="Http\HttpPDU.cs" />
     <Compile Include="Http\HttpRequest.cs" />

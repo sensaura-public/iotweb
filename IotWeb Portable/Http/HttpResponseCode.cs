@@ -9,7 +9,8 @@ namespace IotWeb.Common.Http
 	/// <summary>
 	/// HTTP response codes
 	/// 
-	/// Only a subset are included here.
+	/// Only a subset are included here. Taken from the HTTP/1.0 spec:
+	/// http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 	/// </summary>
 	public enum HttpResponseCode
 	{
