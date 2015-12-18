@@ -13,6 +13,8 @@ namespace IotWeb.Common.Http
 	{
 		// Instance variables
 		private ISocketServer m_server;
+        private List<IHttpFilter> m_filters;
+        private Dictionary<string, IHttpRequestHandler> m_handlers;
 
 		public int Port
 		{
@@ -23,6 +25,8 @@ namespace IotWeb.Common.Http
 		{
 			m_server = server;
 			m_server.ConnectionRequested = ConnectionRequested;
+            m_filters = new List<IHttpFilter>();
+            m_handlers = new Dictionary<string, IHttpRequestHandler>();
 		}
 
 		public void Start(int port)
@@ -34,6 +38,23 @@ namespace IotWeb.Common.Http
 		{
 			m_server.Stop();
 		}
+
+        public void AddHttpFilter(IHttpFilter filter)
+        {
+            lock(m_filters)
+            {
+                m_filters.Add(filter);
+            }
+        }
+
+        public void AddHttpRequestHandler(string uri, IHttpRequestHandler handler)
+        {
+            // TODO: Verify URI
+            lock (m_handlers)
+            {
+                m_handlers.Add(uri, handler);
+            }
+        }
 
 		/// <summary>
 		/// Handle the HTTP connection
@@ -49,8 +70,49 @@ namespace IotWeb.Common.Http
 		private void ConnectionRequested(ISocketServer server, string hostname, Stream input, Stream output)
 		{
 			HttpRequestProcessor processor = new HttpRequestProcessor();
-			processor.ProcessHttpRequest(input, output);
+			processor.ProcessHttpRequest(this, input, output);
 		}
 
+        /// <summary>
+        /// Apply all the filters to the current request
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="response"></param>
+        /// <param name="context"></param>
+        internal void ApplyFilters(HttpRequest request, HttpResponse response, HttpContext context)
+        {
+            lock (m_filters)
+            {
+                foreach (IHttpFilter filter in m_filters)
+                    filter.ApplyFilter(request, response, context);
+            }
+        }
+
+        /// <summary>
+        /// Find the matching handler for the request
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="partialUri"></param>
+        /// <returns></returns>
+        internal IHttpRequestHandler GetHandlerForUri(string uri, out string partialUri)
+        {
+            partialUri = uri;
+            int length = 0;
+            IHttpRequestHandler handler = null;
+            lock (m_handlers)
+            {
+                // Find the longest match
+                foreach (string mapped in m_handlers.Keys)
+                {
+                    if (uri.StartsWith(mapped) && (mapped.Length > length))
+                    {
+                        length = mapped.Length;
+                        handler = m_handlers[mapped];
+                        partialUri = uri.Substring(length);
+                    }
+                }
+            }
+            return handler;
+        }
 	}
 }

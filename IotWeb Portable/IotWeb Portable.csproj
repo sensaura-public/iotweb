@@ -36,6 +36,8 @@
   <ItemGroup>
     <Compile Include="Echo\BaseEchoServer.cs" />
     <Compile Include="Http\BaseHttpServer.cs" />
+    <Compile Include="Http\CaseInsensitiveDictionary.cs" />
+    <Compile Include="Http\HttpContext.cs" />
     <Compile Include="Http\HttpException.cs" />
     <Compile Include="Http\HttpHeaders.cs" />
     <Compile Include="Http\HttpMethod.cs" />
@@ -44,6 +46,9 @@
     <Compile Include="Http\HttpRequestProcessor.cs" />
     <Compile Include="Http\HttpResponse.cs" />
     <Compile Include="Http\HttpResponseCode.cs" />
+    <Compile Include="Http\IHttpFilter.cs" />
+    <Compile Include="Http\IHttpRequestHandler.cs" />
+    <Compile Include="Http\IWebSocketRequestHandler.cs" />
     <Compile Include="IServer.cs" />
     <Compile Include="ISocketServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
