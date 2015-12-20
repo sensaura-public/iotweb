@@ -2,6 +2,8 @@
 using System.ComponentModel;
 using System.Threading;
 using IotWeb.Server;
+using IotWeb.Common.Util;
+using IotWeb.Common.Http;
 using Splat;
 
 namespace WebHost.Desktop
@@ -21,11 +23,21 @@ namespace WebHost.Desktop
         static void Main(string[] args)
 		{
             // Show the logs
-            Locator.CurrentMutable.RegisterConstant(new ConsoleLogger(), typeof(ILogger));
+            ILogger logger = new ConsoleLogger();
+            logger.Level = LogLevel.Debug;
+            Locator.CurrentMutable.RegisterConstant(logger, typeof(ILogger));
             // Set up and run the server
 			HttpServer server = new HttpServer();
+            server.AddHttpRequestHandler(
+                "/",
+                new HttpResourceHandler(
+                    Utilities.GetContainingAssembly(typeof(Program)),
+                    "Resources.Site",
+                    "index.html"
+                    )
+                );
 			server.Start(8000);
-            Console.WriteLine("Server running - press any key to stop.");
+            LogHost.Default.Debug("Server running - press any key to stop.");
             while (!Console.KeyAvailable)
                 Thread.Sleep(100);
             Console.ReadKey();
