@@ -12,31 +12,32 @@ namespace IotWeb.Common.Http
 	public class BaseHttpServer : IServer, IEnableLogger
 	{
 		// Instance variables
-		private ISocketServer m_server;
         private List<IHttpFilter> m_filters;
         private Dictionary<string, IHttpRequestHandler> m_handlers;
 
-		public int Port
+        internal ISocketServer SocketServer { get; private set; }
+
+        public int Port
 		{
-			get { return m_server.Port; }
+			get { return SocketServer.Port; }
 		}
 
 		protected BaseHttpServer(ISocketServer server)
 		{
-			m_server = server;
-			m_server.ConnectionRequested = ConnectionRequested;
+			SocketServer = server;
+			SocketServer.ConnectionRequested = ConnectionRequested;
             m_filters = new List<IHttpFilter>();
             m_handlers = new Dictionary<string, IHttpRequestHandler>();
 		}
 
 		public void Start(int port)
 		{
-			m_server.Start(port);
+			SocketServer.Start(port);
 		}
 
 		public void Stop()
 		{
-			m_server.Stop();
+			SocketServer.Stop();
 		}
 
         public void AddHttpFilter(IHttpFilter filter)
@@ -69,8 +70,8 @@ namespace IotWeb.Common.Http
 		/// <param name="output"></param>
 		private void ConnectionRequested(ISocketServer server, string hostname, Stream input, Stream output)
 		{
-			HttpRequestProcessor processor = new HttpRequestProcessor();
-			processor.ProcessHttpRequest(this, input, output);
+			HttpRequestProcessor processor = new HttpRequestProcessor(this);
+			processor.ProcessHttpRequest(input, output);
 		}
 
         /// <summary>

@@ -1,0 +1,9 @@
+# Mime types used by the server
+.html,text/html
+.css,text/css
+.js,application/javascript
+.json,application/json
+.gif,image/gif
+.png,image/png
+.jpg,image/jpeg
+.svg,image/svg+xml

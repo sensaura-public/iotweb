@@ -37,130 +37,87 @@ namespace IotWeb.Common.Http
 		private int m_index;
 		private bool m_connected;
 		private string m_lastHeader;
+        private BaseHttpServer m_server;
 
-		public HttpRequestProcessor()
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+		public HttpRequestProcessor(BaseHttpServer server)
 		{
 			m_buffer = new byte[InputBufferSize];
 			m_index = 0;
 			m_connected = true;
 			m_lastHeader = null;
+            m_server = server;
 		}
 
-		/// <summary>
-		/// Handle the HTTP connection
-		/// 
-		/// This implementation doesn't support keep alive so each HTTP session
-		/// consists of parsing the request, dispatching to a handler and then
-		/// sending the response before closing the connection.
-		/// </summary>
+        /// <summary>
+        /// Handle the HTTP connection
+        /// 
+        /// This implementation doesn't support keep alive so each HTTP session
+        /// consists of parsing the request, dispatching to a handler and then
+        /// sending the response before closing the connection.
+        /// </summary>
         /// <param name="server"></param>
-		/// <param name="input"></param>
-		/// <param name="output"></param>
-		public void ProcessHttpRequest(BaseHttpServer server, Stream input, Stream output)
+        /// <param name="input"></param>
+        /// <param name="output"></param>
+        public void ProcessHttpRequest(Stream input, Stream output)
 		{
-			// Parse the request first
-			RequestParseState state = RequestParseState.StartLine;
-			string line;
-			HttpRequest request = null;
-			HttpException parseError = null;
-			try
-			{
-				while (m_connected && (state != RequestParseState.Body))
-				{
-					// Keep trying to read a line
-					if (!ReadLine(input, out line))
-						continue;
-					switch (state)
-					{
-						case RequestParseState.StartLine:
-							request = ParseRequestLine(line);
-							if (request == null)
-								return; // Just let the connection close
-							state++;
-							break;
-						case RequestParseState.Headers:
-							if (line.Length == 0)
-								state++;
-							else
-								ParseHeaderLine(request, line);
-							break;
-					}
-				}
-			}
-			catch (HttpException ex)
-			{
-				parseError = ex;
-			}
-			catch (Exception ex)
-			{
-				parseError = new HttpInternalServerErrorException("Error parsing request.");
-			}
-			// Read any associated body component
-			if ((parseError == null)&&request.Headers.ContainsKey(HttpHeaders.ContentType))
-			{
-				request.ContentType = request.Headers[HttpHeaders.ContentType];
-				try 
-				{
-					if (!request.Headers.ContainsKey(HttpHeaders.ContentLength))
-						throw new HttpLengthRequiredException();
-					int length;
-					if (!int.TryParse(request.Headers[HttpHeaders.ContentLength], out length))
-						throw new HttpLengthRequiredException();
-					request.ContentLength = length;
-					if (length > MaxRequestBody)
-						throw new HttpRequestEntityTooLargeException();
-					// Read the data in
-					MemoryStream content = new MemoryStream();
-					while (m_connected && (content.Length != length)) 
-					{
-						ReadData(input);
-						content.Write(m_buffer, 0, m_index);
-						ExtractBytes(m_index);
-					}
-					// Did the connection drop while reading?
-					if (!m_connected)
-						return;
-					// Reset the stream location and attach it to the request
-					content.Seek(0, SeekOrigin.Begin);
-					request.Content = content;
-				}
-				catch (HttpException ex)
-				{
-					parseError = ex;
-				}
-				catch (Exception ex)
-				{
-					parseError = new HttpInternalServerErrorException();
-				}
-			}
-            // We have at least a partial request, create the matching response
-            HttpContext context = new HttpContext();
-            HttpResponse response = new HttpResponse();
-			if (parseError == null)
-            {
-                // TODO: Process the cookies
-                // Apply filters
-                try
-                {
-                    server.ApplyFilters(request, response, context);
-                }
-                catch (HttpException ex)
-                {
-                    parseError = ex;
-                }
-                catch (Exception ex)
-                {
-                    parseError = new HttpInternalServerErrorException();
-                }
-            }
-            // TODO: Check for WebSocket upgrade
-            // Dispatch to the handler
+            this.Log().Debug("** Processing new request");
+            // Set up state
+            HttpRequest request = null;
+            HttpResponse response = null;
+            HttpException parseError = null;
+            // Set timeout on input stream
+            input.ReadTimeout = 10;
+            // Process the request
             try
             {
+                request = ParseRequest(input);
+                if ((request == null) || !m_connected)
+                    return; // Nothing we can do, just drop the connection
+                // Do we have any content in the body ?
+                if (request.Headers.ContainsKey(HttpHeaders.ContentType))
+                {
+                    this.Log().Debug("Reading request content.");
+                    if (!request.Headers.ContainsKey(HttpHeaders.ContentLength))
+                        throw new HttpLengthRequiredException();
+                    int length;
+                    if (!int.TryParse(request.Headers[HttpHeaders.ContentLength], out length))
+                        throw new HttpLengthRequiredException();
+                    request.ContentLength = length;
+                    if (length > MaxRequestBody)
+                        throw new HttpRequestEntityTooLargeException();
+                    // Read the data in
+                    MemoryStream content = new MemoryStream();
+                    while (m_connected && (content.Length != length))
+                    {
+                        ReadData(input);
+                        content.Write(m_buffer, 0, m_index);
+                        ExtractBytes(m_index);
+                    }
+                    // Did the connection drop while reading?
+                    if (!m_connected)
+                        return;
+                    // Reset the stream location and attach it to the request
+                    content.Seek(0, SeekOrigin.Begin);
+                    request.Content = content;
+                }
+                // We have at least a partial request, create the matching response
+                HttpContext context = new HttpContext();
+                response = new HttpResponse();
+                // TODO: Process the cookies
+                this.Log().Debug("Processing cookies");
+                // Apply filters
+                this.Log().Debug("Applying middleware filters");
+                m_server.ApplyFilters(request, response, context);
+                // TODO: Check for WebSocket upgrade
+                // Dispatch to the handler
                 string partialUri;
-                IHttpRequestHandler handler = server.GetHandlerForUri(request.URI, out partialUri);
+                IHttpRequestHandler handler = m_server.GetHandlerForUri(request.URI, out partialUri);
                 if (handler == null)
                     throw new HttpNotFoundException();
+                this.Log().Debug("Dispatching to handler.");
                 handler.HandleRequest(partialUri, request, response, context);
             }
             catch (HttpException ex)
@@ -169,18 +126,78 @@ namespace IotWeb.Common.Http
             }
             catch (Exception ex)
             {
+                this.Log().Debug("Exception while processing request - {0}", ex.Message);
                 parseError = new HttpInternalServerErrorException();
             }
+            // Do we need to send back an error response ?
             if (parseError != null)
             {
-                // Can't continue, send a response back with the error information
+                // TODO: Clear any content that might already be added
                 response.ResponseCode = parseError.ResponseCode;
-				response.ResponseMessage = parseError.Message;
-				response.Send(output);
-			}
+                response.ResponseMessage = parseError.Message;
+            }
+            // Write the response
+            this.Log().Debug("Sending back response");
+            response.Send(output);
+            output.Flush();
         }
 
         #region Internal Implementation
+        /// <summary>
+        /// Parse the request and headers.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        private HttpRequest ParseRequest(Stream input)
+        {
+            // Parse the request first
+            RequestParseState state = RequestParseState.StartLine;
+            string line;
+            HttpRequest request = null;
+            try
+            {
+                while (m_connected && (state != RequestParseState.Body))
+                {
+                    // Keep trying to read a line
+                    if (!ReadLine(input, out line))
+                        continue;
+                    switch (state)
+                    {
+                        case RequestParseState.StartLine:
+                            this.Log().Debug("Read request start line - '{0}'", line);
+                            request = ParseRequestLine(line);
+                            if (request == null)
+                                return null; // Just let the connection close
+                            state++;
+                            break;
+                        case RequestParseState.Headers:
+                            this.Log().Debug("Read header line - '{0}'", line);
+                            if (line.Length == 0)
+                                state++;
+                            else
+                                ParseHeaderLine(request, line);
+                            break;
+                    }
+                }
+            }
+            catch (HttpException ex)
+            {
+                throw ex;
+            }
+            catch (Exception ex)
+            {
+                this.Log().Debug("Error while parsing request - {0}", ex.Message);
+                throw new HttpInternalServerErrorException("Error parsing request.");
+            }
+            // All done
+            return request;
+        }
+
+        /// <summary>
+        /// Parse a single header line
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="line"></param>
         private void ParseHeaderLine(HttpRequest request, string line)
 		{
 			if (line.StartsWith(" "))
@@ -247,17 +264,20 @@ namespace IotWeb.Common.Http
 		/// <returns></returns>
 		private void ReadData(Stream input)
 		{
-			bool closed = false;
 			try
 			{
-				int read = input.Read(m_buffer, m_index, m_buffer.Length - m_index);
+                bool timedOut = false;
+                int read = m_server.SocketServer.ReadWithTimeout(input, m_buffer, m_index, m_buffer.Length - m_index, out timedOut);
+//                if (read==0)
+//                    this.Log().Debug("Read {0} bytes, timedOut = {1}", read, timedOut);
 				m_index += read;
-				if (read == 0)
+				if ((read == 0) && !timedOut)
 					m_connected = false;
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
-				// Any error causes the connection to close
+                // Any error causes the connection to close
+                this.Log().Debug("Error while reading - {0}", ex.ToString());
 				m_connected = false;
 			}
 		}
@@ -271,10 +291,6 @@ namespace IotWeb.Common.Http
 		private bool ReadLine(Stream input, out string line)
 		{
 			line = null;
-			// Make sure we have some data in the buffer
-			ReadData(input);
-			if (!m_connected)
-				return false;
 			// Look for CR/LF pair
 			for (int i = 0; i < (m_index - 1); i++)
 			{
@@ -283,11 +299,13 @@ namespace IotWeb.Common.Http
 					// Extract the string (without the CR/LF)
 					line = Encoding.UTF8.GetString(m_buffer, 0, i);
 					ExtractBytes(i + 2);
+                    this.Log().Debug("Read input line '{0}'", line);
 					return true;
 				}
 			}
-			// No line yet
-			return false;
+            // No line yet, read more data
+            ReadData(input);
+            return false;
 		}
 		#endregion
 	}
