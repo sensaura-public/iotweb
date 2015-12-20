@@ -107,8 +107,9 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="HttpServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SockerServer.cs" />
+    <Compile Include="SocketServer.cs" />
     <EmbeddedResource Include="Properties\IotWeb_UWP.rd.xml" />
   </ItemGroup>
   <ItemGroup>
