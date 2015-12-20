@@ -53,9 +53,10 @@ namespace IotWeb.Common.Http
 		/// consists of parsing the request, dispatching to a handler and then
 		/// sending the response before closing the connection.
 		/// </summary>
+        /// <param name="server"></param>
 		/// <param name="input"></param>
 		/// <param name="output"></param>
-		public void ProcessHttpRequest(Stream input, Stream output)
+		public void ProcessHttpRequest(BaseHttpServer server, Stream input, Stream output)
 		{
 			// Parse the request first
 			RequestParseState state = RequestParseState.StartLine;
@@ -131,26 +132,56 @@ namespace IotWeb.Common.Http
 				{
 					parseError = new HttpInternalServerErrorException();
 				}
-
 			}
-			// We have at least a partial request, create the matching response
-			HttpResponse response = new HttpResponse();
-			if (parseError != null) 
-			{
-				// Can't continue, send a response back with the error information
-				response.ResponseCode = parseError.ResponseCode;
+            // We have at least a partial request, create the matching response
+            HttpContext context = new HttpContext();
+            HttpResponse response = new HttpResponse();
+			if (parseError == null)
+            {
+                // TODO: Process the cookies
+                // Apply filters
+                try
+                {
+                    server.ApplyFilters(request, response, context);
+                }
+                catch (HttpException ex)
+                {
+                    parseError = ex;
+                }
+                catch (Exception ex)
+                {
+                    parseError = new HttpInternalServerErrorException();
+                }
+            }
+            // TODO: Check for WebSocket upgrade
+            // Dispatch to the handler
+            try
+            {
+                string partialUri;
+                IHttpRequestHandler handler = server.GetHandlerForUri(request.URI, out partialUri);
+                if (handler == null)
+                    throw new HttpNotFoundException();
+                handler.HandleRequest(partialUri, request, response, context);
+            }
+            catch (HttpException ex)
+            {
+                parseError = ex;
+            }
+            catch (Exception ex)
+            {
+                parseError = new HttpInternalServerErrorException();
+            }
+            if (parseError != null)
+            {
+                // Can't continue, send a response back with the error information
+                response.ResponseCode = parseError.ResponseCode;
 				response.ResponseMessage = parseError.Message;
 				response.Send(output);
-				return;
 			}
-			// Process the cookies
+        }
 
-
-
-		}
-
-		#region Internal Implementation
-		private void ParseHeaderLine(HttpRequest request, string line)
+        #region Internal Implementation
+        private void ParseHeaderLine(HttpRequest request, string line)
 		{
 			if (line.StartsWith(" "))
 			{
