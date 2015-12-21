@@ -68,8 +68,6 @@ namespace IotWeb.Common.Http
             HttpRequest request = null;
             HttpResponse response = null;
             HttpException parseError = null;
-            // Set timeout on input stream
-            input.ReadTimeout = 10;
             // Process the request
             try
             {
@@ -266,12 +264,9 @@ namespace IotWeb.Common.Http
 		{
 			try
 			{
-                bool timedOut = false;
-                int read = m_server.SocketServer.ReadWithTimeout(input, m_buffer, m_index, m_buffer.Length - m_index, out timedOut);
-//                if (read==0)
-//                    this.Log().Debug("Read {0} bytes, timedOut = {1}", read, timedOut);
+				int read = input.Read(m_buffer, m_index, m_buffer.Length - m_index);
 				m_index += read;
-				if ((read == 0) && !timedOut)
+				if (read == 0)
 					m_connected = false;
 			}
 			catch (Exception ex)

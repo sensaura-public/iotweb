@@ -56,7 +56,7 @@ namespace IotWeb.Server
             ThreadPool.QueueUserWorkItem((arg) =>
             {
                 m_listener = new Socket(SocketType.Stream, ProtocolType.IP);
-                m_listener.Bind(new IPEndPoint(IPAddress.Any, port));
+                m_listener.Bind(new IPEndPoint(IPAddress.Loopback, port));
                 m_listener.Blocking = true;
                 m_listener.ReceiveTimeout = 100;
                 m_listener.Listen(BackLog);
@@ -129,36 +129,5 @@ namespace IotWeb.Server
 			}
 		}
 
-        /// <summary>
-        /// Read with timeout
-        /// 
-        /// This reads a block of data from the input stream with support
-        /// for detecting timeout.
-        /// </summary>
-        /// <param name="input"></param>
-        /// <param name="buffer"></param>
-        /// <param name="offset"></param>
-        /// <param name="count"></param>
-        /// <param name="timedOut"></param>
-        /// <returns></returns>
-        public int ReadWithTimeout(Stream input, byte[] buffer, int offset, int count, out bool timedOut)
-        {
-            timedOut = false;
-            try
-            {
-                int result = input.Read(buffer, offset, count);
-                return result;
-            }
-            catch (IOException ex)
-            {
-                SocketException se = ex.InnerException as SocketException;
-                if ((se != null)&& (se.SocketErrorCode == SocketError.TimedOut))
-                {
-                    timedOut = true;
-                    return 0;
-                }
-                throw ex;
-            }
-        }
     }
 }
