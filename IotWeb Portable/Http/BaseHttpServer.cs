@@ -14,6 +14,7 @@ namespace IotWeb.Common.Http
 		// Instance variables
         private List<IHttpFilter> m_filters;
         private Dictionary<string, IHttpRequestHandler> m_handlers;
+		private Dictionary<string, IWebSocketRequestHandler> m_wsHandlers;
 
         internal ISocketServer SocketServer { get; private set; }
 
@@ -28,6 +29,7 @@ namespace IotWeb.Common.Http
 			SocketServer.ConnectionRequested = ConnectionRequested;
             m_filters = new List<IHttpFilter>();
             m_handlers = new Dictionary<string, IHttpRequestHandler>();
+			m_wsHandlers = new Dictionary<string, IWebSocketRequestHandler>();
 		}
 
 		public void Start(int port)
@@ -40,6 +42,12 @@ namespace IotWeb.Common.Http
 			SocketServer.Stop();
 		}
 
+		/// <summary>
+		/// Add a IHttpFilter instance.
+		/// 
+		/// Filters are applied in the order they are added.
+		/// </summary>
+		/// <param name="filter"></param>
         public void AddHttpFilter(IHttpFilter filter)
         {
             lock(m_filters)
@@ -48,6 +56,20 @@ namespace IotWeb.Common.Http
             }
         }
 
+		public void AddWebSocketRequestHandler(string uri, IWebSocketRequestHandler handler)
+		{
+			// TODO: Verify URI
+			lock (m_wsHandlers)
+			{
+				m_wsHandlers.Add(uri, handler);
+			}
+		}
+
+		/// <summary>
+		/// Map an IHttpRequestHandler instance to a URI
+		/// </summary>
+		/// <param name="uri"></param>
+		/// <param name="handler"></param>
         public void AddHttpRequestHandler(string uri, IHttpRequestHandler handler)
         {
             // TODO: Verify URI
@@ -70,6 +92,7 @@ namespace IotWeb.Common.Http
 		/// <param name="output"></param>
 		private void ConnectionRequested(ISocketServer server, string hostname, Stream input, Stream output)
 		{
+			this.Log().Debug("Inbound connection from {0}", hostname);
 			HttpRequestProcessor processor = new HttpRequestProcessor(this);
 			processor.ProcessHttpRequest(input, output);
 		}
@@ -115,5 +138,34 @@ namespace IotWeb.Common.Http
             }
             return handler;
         }
+
+		/// <summary>
+		/// Find the matching handler for the WebSocket request
+		/// </summary>
+		/// <param name="uri"></param>
+		/// <param name="partialUri"></param>
+		/// <returns></returns>
+		internal IWebSocketRequestHandler GetHandlerForWebSocket(string uri, out string partialUri)
+		{
+			partialUri = uri;
+			int length = 0;
+			IWebSocketRequestHandler handler = null;
+			lock (m_wsHandlers)
+			{
+				// Find the longest match
+				foreach (string mapped in m_wsHandlers.Keys)
+				{
+					if (uri.StartsWith(mapped) && (mapped.Length > length))
+					{
+						length = mapped.Length;
+						handler = m_wsHandlers[mapped];
+						partialUri = uri.Substring(length);
+					}
+				}
+			}
+			return handler;
+		}
+
+
 	}
 }

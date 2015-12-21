@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +27,10 @@ namespace IotWeb.Common.Http
         {
             if (request.Method != HttpMethod.Get)
                 throw new HttpMethodNotAllowedException();
+			// DEBUG
+			Cookie cookie = new Cookie("SessionID", Guid.NewGuid().ToString());
+			cookie.Expires = DateTime.Now.AddMinutes(10);
+			response.Cookies.Add(cookie);
             // Replace '/' with '.' to generate the resource name
             string resourceName = uri.Replace('/', '.');
             if (resourceName.StartsWith("."))
