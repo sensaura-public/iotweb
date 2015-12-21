@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -39,7 +40,38 @@ namespace IotWeb.Common.Http
             // Write the headers
             foreach (string header in Headers.Keys)
                 WriteLine(output, string.Format("{0}: {1}", header, Headers[header]));
-            // TODO: Write the cookies
+            // Write the cookies
+			if (Cookies.Count > 0) 
+			{
+				StringBuilder sb = new StringBuilder();
+				foreach (Cookie cookie in Cookies)
+				{
+					sb.Append(HttpHeaders.SetCookie + ": ");
+					// Add the value
+					sb.Append(String.Format("{0}={1}", cookie.Name, cookie.Value));
+					// Add the path
+					if ((cookie.Path != null) && (cookie.Path.Length > 0))
+						sb.Append(string.Format("; Path={0}", cookie.Path));
+					// Add the domain
+					if ((cookie.Domain != null) && (cookie.Domain.Length > 0))
+						sb.Append(string.Format("; Domain={0}", cookie.Domain));
+					// Set the expiry
+					if (cookie.Expires != DateTime.MinValue) 
+					{
+						DateTime utc = cookie.Expires.ToUniversalTime();
+						sb.Append("; Expires=");
+						sb.Append(utc.ToString(@"ddd, dd-MMM-yyyy HH:mm:ss G\MT"));
+					}
+					// Set the security
+					if (cookie.Secure)
+						sb.Append("; Secure");
+					if (cookie.HttpOnly)
+						sb.Append("; HttpOnly");
+					// Write the header
+					WriteLine(output, sb.ToString());
+					sb.Clear();
+				}
+			}
             // Write the body
             WriteLine(output, "");
             long bytesToWrite = Content.Position;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,6 +18,10 @@ namespace IotWeb.Common.Http
 
 		// Regular expression for parsing headers
 		private static Regex HeaderLine = new Regex(@"^([a-zA-Z][a-zA-Z0-9\-]*):(.*)");
+
+		// Cookie separators
+		private static char[] CookieSeparator = new char[] { ';' };
+		private static char[] CookieValueSeparator = new char[] { '=' };
 
 		// States for the request parser
 		private enum RequestParseState
@@ -101,12 +106,26 @@ namespace IotWeb.Common.Http
                     content.Seek(0, SeekOrigin.Begin);
                     request.Content = content;
                 }
-                // We have at least a partial request, create the matching response
-                HttpContext context = new HttpContext();
-                response = new HttpResponse();
-                // TODO: Process the cookies
-                this.Log().Debug("Processing cookies");
-                // Apply filters
+                // Process the cookies
+				this.Log().Debug("Processing cookies");
+				if (request.Headers.ContainsKey(HttpHeaders.Cookie))
+				{
+					string[] cookies = request.Headers[HttpHeaders.Cookie].Split(CookieSeparator);
+					foreach (string cookie in cookies)
+					{
+						string[] parts = cookie.Split(CookieValueSeparator);
+						Cookie c = new Cookie();
+						c.Name = parts[0];
+						if (parts.Length > 1)
+							c.Value = parts[1];
+						this.Log().Debug("Adding cookie '{0}'", c);
+						request.Cookies.Add(c);
+					}
+				}
+				// We have at least a partial request, create the matching response
+				HttpContext context = new HttpContext();
+				response = new HttpResponse();
+				// Apply filters
                 this.Log().Debug("Applying middleware filters");
                 m_server.ApplyFilters(request, response, context);
                 // TODO: Check for WebSocket upgrade
