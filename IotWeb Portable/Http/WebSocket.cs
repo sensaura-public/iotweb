@@ -103,6 +103,12 @@ namespace IotWeb.Common.Http
 		/// <param name="frame"></param>
 		public delegate void DataReceivedHandler(WebSocket socket, string frame);
 
+		/// <summary>
+		/// Event handler for connection close events.
+		/// </summary>
+		/// <param name="socket"></param>
+		public delegate void ConnectionClosedHandler(WebSocket socket);
+
 		// Constants
 		private const long MaxFrameSize = 64 * 1024;
 		private const int MaxHeaderSize = 14;
@@ -124,6 +130,11 @@ namespace IotWeb.Common.Http
 		/// Event for data reception
 		/// </summary>
 		public event DataReceivedHandler DataReceived;
+
+		/// <summary>
+		/// Event for connection closed
+		/// </summary>
+		public event ConnectionClosedHandler ConnectionClosed;
 
 		/// <summary>
 		/// Internal constructor.
@@ -160,6 +171,10 @@ namespace IotWeb.Common.Http
 			// Send the close frame
 			SendFrame(CloseFrame, null, 0, 0);
 			m_closed = true;
+			// Notify any listeners
+			ConnectionClosedHandler handler = ConnectionClosed;
+			if (handler != null)
+				handler(this);
 		}
 
 		/// <summary>
