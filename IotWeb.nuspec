@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package >
+  <metadata minClientVersion="3.1">
+    <id>IotWeb</id>
+    <version>0.9.0</version>
+    <title>HTTP/WebSocket server for UWP and .NET 4.5</title>
+    <authors>The Sensaura Project</authors>
+    <owners>The Sensaura Project</owners>
+    <licenseUrl>http://sensaura.org/pages/tools/iotweb/LICENSE.txt</licenseUrl>
+    <projectUrl>http://sensaura.org/pages/tools/iotweb/</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Blah, blah, blah</description>
+    <releaseNotes>Initial release.</releaseNotes>
+    <copyright>Copyright 2015</copyright>
+    <tags>iot iot-core server</tags>
+    <dependencies>
+      <dependency id="Splat" version="1.6.2"/>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="IotWeb Portable/bin/Release/IotWeb_Portable/IotWeb.Common.dll" target="lib/dotnet/IotWeb.Common.dll"/>
+    <file src="IotWeb Portable/bin/Release/IotWeb_Portable/IotWeb.Common.pdb" target="lib/dotnet/IotWeb.Common.pdb"/>
+    <file src="IotWeb NET45/bin/Release/IotWeb_NET45/IotWeb.Server.dll" target="lib/net45/IotWeb.Server.dll"/>
+    <file src="IotWeb NET45/bin/Release/IotWeb_NET45/IotWeb.Server.pdb" target="lib/net45/IotWeb.Server.pdb"/>
+<!--
+    <file src="IotWeb NET45/bin/Release/IotWeb_UWP/IotWeb.Server.dll" target="lib/uap10.0/IotWeb.Server.dll"/>
+    <file src="IotWeb NET45/bin/Release/IotWeb_UWP/IotWeb.Server.pdb" target="lib/uap10.0/IotWeb.Server.pdb"/>
+-->
+  </files>
+</package>
