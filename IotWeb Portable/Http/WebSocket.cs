@@ -15,9 +15,6 @@ namespace IotWeb.Common.Http
 		/// </summary>
 		private class FrameHeader
 		{
-			// Maximum size of a header
-			private const int MaxHeaderSize = 14;
-
 			// Size of a decoding key
 			private const int KeySize = 4;
 
@@ -108,6 +105,7 @@ namespace IotWeb.Common.Http
 
 		// Constants
 		private const long MaxFrameSize = 64 * 1024;
+		private const int MaxHeaderSize = 14;
 
 		// Opcodes
 		private const byte ContinuationFrame = 0x00;
@@ -145,7 +143,11 @@ namespace IotWeb.Common.Http
 		/// <param name="message"></param>
 		public void Send(string message)
 		{
-
+			if (m_closed)
+				return;
+			// Convert the message to UTF8
+			byte[] data = Encoding.UTF8.GetBytes(message);
+			SendFrame(TextFrame, data, 0, data.Length);
 		}
 
 		/// <summary>
@@ -153,7 +155,11 @@ namespace IotWeb.Common.Http
 		/// </summary>
 		public void Close()
 		{
-
+			if (m_closed)
+				return;
+			// Send the close frame
+			SendFrame(CloseFrame, null, 0, 0);
+			m_closed = true;
 		}
 
 		/// <summary>
@@ -170,7 +176,7 @@ namespace IotWeb.Common.Http
 				FrameHeader header = FrameHeader.Parse(m_input);
 				if (header == null)
 				{
-					m_closed = true;
+					Close();
 					return;
 				}
 				this.Log().Debug("Received frame - opcode = {0}, length = {1}, finished = {2}", header.OpCode, header.Length, header.Finished);
@@ -182,7 +188,7 @@ namespace IotWeb.Common.Http
 						if (lastFrame == FrameType.Unknown)
 						{
 							// Continuation with no start frame, just drop the connection
-							m_closed = true;
+							Close();
 							return;
 						}
 						break;
@@ -198,11 +204,12 @@ namespace IotWeb.Common.Http
 						break;
 					case CloseFrame:
 						// Close the connection
-						m_closed = true;
+						Close();
 						return;
 					case PingFrame:
 						// Request for a Pong response
-						break;
+						SendPong(header);
+						continue;
 					default:
 						// Just ignore it
 						readData = false;
@@ -215,13 +222,15 @@ namespace IotWeb.Common.Http
 					index = MaxFrameSize;
 				}
 				// Read or consume the data
-				if (readData) 
+				if (readData)
 				{
-					m_closed = !ReadData(header, buffer, (int)index);
+					if (!ReadData(header, buffer, (int)index))
+						Close();
 					index += header.Length;
 				}
-				else
-					m_closed = !ConsumeData(header);
+				else if (!ConsumeData(header))
+					Close();
+				// Did we wind up closing the connection?
 				if (m_closed)
 					return;
 				// Is this the end of the data sequence?
@@ -318,6 +327,55 @@ namespace IotWeb.Common.Http
 				remaining -= (long)DiscardBufferSize;
 			}
 			return true;
+		}
+
+		/// <summary>
+		/// Send a frame
+		/// </summary>
+		/// <param name="opcode"></param>
+		/// <param name="data"></param>
+		/// <param name="offset"></param>
+		/// <param name="length"></param>
+		private void SendFrame(byte opcode, byte[] data, int offset, int length)
+		{
+			// Set up the header
+			byte[] header = new byte[MaxHeaderSize];
+			int index = 0;
+			// Add the opcode and flags
+			header[index++] = (byte)(0x80 | opcode); // Always send complete frames
+			// Add the length
+			if (length < 126)
+				header[index++] = (byte)length;
+			else if (length < 65536)
+			{
+				// 16 bit length field
+				header[index++] = 126;
+				header[index++] = (byte)((length >> 8) & 0xff);
+				header[index++] = (byte)(length & 0xff);
+			}
+			else // We do not support large frames, just ignore them
+				return;
+			// And finally send it out
+			lock (m_output)
+			{
+				m_output.Write(header, 0, index); // Include key
+				if (data!=null)
+					m_output.Write(data, offset, length);
+				m_output.Flush();
+			}
+		}
+
+		/// <summary>
+		/// Send a 'pong' response
+		/// </summary>
+		/// <param name="header"></param>
+		private void SendPong(FrameHeader header)
+		{
+			// Get the data we need to echo back
+			byte[] buffer = new byte[MaxFrameSize];
+			if (!ReadData(header, buffer, 0))
+				return;
+			SendFrame(PongFrame, buffer, 0, (int)header.Length);
 		}
 	}
 }
