@@ -18,6 +18,7 @@
               $("#messages").append("<div>" + e.data + "</div>");
               };
             $("#errors").text("Connection established");
+            ws.send("Hello world!");
             };
           connection.onerror = function(error) {
             $("#errors").text("Could not connect to websocket.");

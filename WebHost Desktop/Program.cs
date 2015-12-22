@@ -11,7 +11,7 @@ namespace WebHost.Desktop
 	/// <summary>
 	/// Simple 'echo' web socket server
 	/// </summary>
-	class WebSocketHandler : IWebSocketRequestHandler
+	class WebSocketHandler : IWebSocketRequestHandler, IEnableLogger
 	{
 
 		public bool WillAcceptRequest(string uri, string protocol)
@@ -21,7 +21,13 @@ namespace WebHost.Desktop
 
 		public void Connected(WebSocket socket)
 		{
-			// TODO: Implement this
+			socket.DataReceived += OnDataReceived;
+		}
+
+		void OnDataReceived(WebSocket socket, string frame)
+		{
+			this.Log().Debug("Received text '{0}'", frame);
+			socket.Send(frame);
 		}
 	}
 
