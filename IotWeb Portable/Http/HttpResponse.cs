@@ -17,8 +17,6 @@ namespace IotWeb.Common.Http
 
 		public string ResponseMessage { get; set; }
 
-        public Stream Content { get; private set; }
-
 		internal HttpResponse()
 			: base()
 		{

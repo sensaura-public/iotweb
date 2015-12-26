@@ -66,7 +66,7 @@ namespace IotWeb.Server
             // Bind to localhost as well
             listener = new StreamSocketListener();
             listener.ConnectionReceived += OnConnectionReceived;
-            await listener.BindEndpointAsync(new HostName("localhost"), Port.ToString());
+            await listener.BindEndpointAsync(new HostName("127.0.0.1"), Port.ToString());
             m_listeners.Add(listener);
         }
 
@@ -107,24 +107,5 @@ namespace IotWeb.Server
             args.Socket.Dispose();
         }
 
-        public int ReadWithTimeout(Stream input, byte[] buffer, int offset, int count, out bool timedOut)
-        {
-            timedOut = false;
-            try
-            {
-                int result = input.Read(buffer, offset, count);
-                return result;
-            }
-            catch (IOException ex)
-            {
-                SocketException se = ex.InnerException as SocketException;
-                if ((se != null) && (se.SocketErrorCode == System.Net.Sockets.SocketError.TimedOut))
-                {
-                    timedOut = true;
-                    return 0;
-                }
-                throw ex;
-            }
-        }
     }
 }
