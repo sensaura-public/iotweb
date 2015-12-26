@@ -1,11 +1,13 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using IotWeb.Common;
+using IotWeb.Common.Util;
 using Splat;
 
 namespace IotWeb.Common.Http
@@ -17,6 +19,13 @@ namespace IotWeb.Common.Http
 
 		// Regular expression for parsing headers
 		private static Regex HeaderLine = new Regex(@"^([a-zA-Z][a-zA-Z0-9\-]*):(.*)");
+
+		// Cookie separators
+		private static char[] CookieSeparator = new char[] { ';' };
+		private static char[] CookieValueSeparator = new char[] { '=' };
+
+		// WebSocket protocol separator
+		private static char[] WebSocketProtocolSeparator = new char[] { ',' };
 
 		// States for the request parser
 		private enum RequestParseState
@@ -31,6 +40,12 @@ namespace IotWeb.Common.Http
 		private const int InputBufferSize = 1024;
 		private const byte CR = 0x0d;
 		private const byte LF = 0x0a;
+
+		// WebSocket header fields
+		private static string SecWebSocketKey = "Sec-WebSocket-Key";
+		private static string SecWebSocketProtocol = "Sec-WebSocket-Protocol";
+		private static string SecWebSocketVersion = "Sec-WebSocket-Version";
+		private static string SecWebSocketAccept = "Sec-WebSocket-Accept";
 
 		// Instance variables
 		private byte[] m_buffer;
@@ -68,8 +83,6 @@ namespace IotWeb.Common.Http
             HttpRequest request = null;
             HttpResponse response = null;
             HttpException parseError = null;
-            // Set timeout on input stream
-            input.ReadTimeout = 10;
             // Process the request
             try
             {
@@ -103,22 +116,49 @@ namespace IotWeb.Common.Http
                     content.Seek(0, SeekOrigin.Begin);
                     request.Content = content;
                 }
-                // We have at least a partial request, create the matching response
-                HttpContext context = new HttpContext();
-                response = new HttpResponse();
-                // TODO: Process the cookies
-                this.Log().Debug("Processing cookies");
-                // Apply filters
+                // Process the cookies
+				this.Log().Debug("Processing cookies");
+				if (request.Headers.ContainsKey(HttpHeaders.Cookie))
+				{
+					string[] cookies = request.Headers[HttpHeaders.Cookie].Split(CookieSeparator);
+					foreach (string cookie in cookies)
+					{
+						string[] parts = cookie.Split(CookieValueSeparator);
+						Cookie c = new Cookie();
+						c.Name = parts[0].Trim();
+						if (parts.Length > 1)
+							c.Value = parts[1].Trim();
+						this.Log().Debug("Adding cookie '{0}'", c);
+						request.Cookies.Add(c);
+					}
+				}
+				// We have at least a partial request, create the matching response
+				HttpContext context = new HttpContext();
+				response = new HttpResponse();
+				// Apply filters
                 this.Log().Debug("Applying middleware filters");
                 m_server.ApplyFilters(request, response, context);
                 // TODO: Check for WebSocket upgrade
-                // Dispatch to the handler
-                string partialUri;
-                IHttpRequestHandler handler = m_server.GetHandlerForUri(request.URI, out partialUri);
-                if (handler == null)
-                    throw new HttpNotFoundException();
-                this.Log().Debug("Dispatching to handler.");
-                handler.HandleRequest(partialUri, request, response, context);
+				IWebSocketRequestHandler wsHandler = UpgradeToWebsocket(request, response);
+				if (wsHandler!=null)
+				{
+					// Write the response back to accept the connection
+					response.Send(output);
+					output.Flush();
+					// Now we can process the websocket
+					WebSocket ws = new WebSocket(input, output);
+					wsHandler.Connected(ws);
+					ws.Run();
+					// Once the websocket connection is finished we don't need to do anything else
+					return;
+				}
+				// Dispatch to the handler
+				string partialUri;
+				IHttpRequestHandler handler = m_server.GetHandlerForUri(request.URI, out partialUri);
+				if (handler == null)
+					throw new HttpNotFoundException();
+				this.Log().Debug("Dispatching to handler.");
+				handler.HandleRequest(partialUri, request, response, context);
             }
             catch (HttpException ex)
             {
@@ -143,6 +183,64 @@ namespace IotWeb.Common.Http
         }
 
         #region Internal Implementation
+		/// <summary>
+		/// Check for an upgrade to a web socket connection.
+		/// </summary>
+		/// <param name="request"></param>
+		/// <param name="response"></param>
+		/// <returns></returns>
+		private IWebSocketRequestHandler UpgradeToWebsocket(HttpRequest request, HttpResponse response)
+		{
+			// Check for required headers
+			if (!(request.Headers.ContainsKey(HttpHeaders.Connection) && request.Headers[HttpHeaders.Connection].Contains("Upgrade")))
+				return null;
+			if (!(request.Headers.ContainsKey(HttpHeaders.Upgrade) && request.Headers[HttpHeaders.Upgrade].Contains("websocket")))
+				return null;
+			if (!request.Headers.ContainsKey(SecWebSocketVersion))
+				return null;
+			int version;
+			if (!(int.TryParse(request.Headers[SecWebSocketVersion], out version) && (version == 13)))
+				return null;
+			if (!request.Headers.ContainsKey(SecWebSocketKey))
+				return null;
+			// Make sure we have a handler for the URI
+			string partial;
+			IWebSocketRequestHandler handler = m_server.GetHandlerForWebSocket(request.URI, out partial);
+			if (handler == null)
+				return null;
+			// Do we support the protocols requested?
+			string protocol = null;
+			if (request.Headers.ContainsKey(SecWebSocketProtocol))
+			{
+				foreach (string proto in request.Headers[SecWebSocketProtocol].Split(WebSocketProtocolSeparator))
+				{
+					if (handler.WillAcceptRequest(partial, proto.Trim()))
+					{
+						protocol = proto.Trim();
+						break;
+					}
+				}
+			}
+			else if (handler.WillAcceptRequest(partial, ""))
+				protocol = "";
+			if (protocol == null)
+				return null;
+			// Finish the handshake
+			byte[] security = Encoding.UTF8.GetBytes(request.Headers[SecWebSocketKey].Trim() + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
+			SHA1CryptoServiceProvider sha1 = new SHA1CryptoServiceProvider();
+			sha1.Initialize();
+			sha1.HashCore(security, 0, security.Length);
+			security = sha1.HashFinal();
+			response.Headers[SecWebSocketAccept] = Convert.ToBase64String(security);
+			response.Headers[HttpHeaders.Upgrade] = "websocket";
+			response.Headers[HttpHeaders.Connection] = "Upgrade";
+			response.ResponseCode = HttpResponseCode.SwitchingProtocols;
+			if (protocol.Length > 0)
+				response.Headers[SecWebSocketProtocol] = protocol;
+			// And we are done
+			return handler;
+		}
+
         /// <summary>
         /// Parse the request and headers.
         /// </summary>
@@ -266,12 +364,9 @@ namespace IotWeb.Common.Http
 		{
 			try
 			{
-                bool timedOut = false;
-                int read = m_server.SocketServer.ReadWithTimeout(input, m_buffer, m_index, m_buffer.Length - m_index, out timedOut);
-//                if (read==0)
-//                    this.Log().Debug("Read {0} bytes, timedOut = {1}", read, timedOut);
+				int read = input.Read(m_buffer, m_index, m_buffer.Length - m_index);
 				m_index += read;
-				if ((read == 0) && !timedOut)
+				if (read == 0)
 					m_connected = false;
 			}
 			catch (Exception ex)

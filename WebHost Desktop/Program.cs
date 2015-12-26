@@ -8,6 +8,29 @@ using Splat;
 
 namespace WebHost.Desktop
 {
+	/// <summary>
+	/// Simple 'echo' web socket server
+	/// </summary>
+	class WebSocketHandler : IWebSocketRequestHandler, IEnableLogger
+	{
+
+		public bool WillAcceptRequest(string uri, string protocol)
+		{
+			return (uri.Length == 0) && (protocol == "echo");
+		}
+
+		public void Connected(WebSocket socket)
+		{
+			socket.DataReceived += OnDataReceived;
+		}
+
+		void OnDataReceived(WebSocket socket, string frame)
+		{
+			this.Log().Debug("Received text '{0}'", frame);
+			socket.Send(frame);
+		}
+	}
+
 	class Program
 	{
         class ConsoleLogger : ILogger
@@ -36,6 +59,10 @@ namespace WebHost.Desktop
                     "index.html"
                     )
                 );
+			server.AddWebSocketRequestHandler(
+				"/sockets/",
+				new WebSocketHandler()
+				);
 			server.Start(8000);
             LogHost.Default.Debug("Server running - press any key to stop.");
             while (!Console.KeyAvailable)

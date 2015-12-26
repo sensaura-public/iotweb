@@ -5,6 +5,40 @@
   <title>IotWeb Sample Page</title>
 </head>
 <body>
-  This is a sample page.
+  <script type="text/javascript" src="js/jquery.js"></script>
+  <script language="javascript">
+    var ws;
+    $(document).ready(
+      function() {
+        if ("WebSocket" in window) {
+          var wsURL = "ws://" + location.hostname + (location.port ? ':' + location.port : ' ') + "/sockets/";
+          var connection = new WebSocket(wsURL, [ 'echo' ]);
+          connection.onopen = function() {
+            ws = connection;
+            ws.onmessage = function(e) {
+              $("#messages").append('<div style="background-color: #fefefe">' + e.data + '</div>');
+              };
+            $("#errors").text("Connection established");
+            ws.send("Hello world!");
+            };
+          connection.onerror = function(error) {
+            $("#errors").text("Could not connect to websocket.");
+            };
+          }
+        else {
+          $("#errors").text("This browser does not support websockets!");
+          }
+        });
+  </script>
+  <div id="input">
+    <div>Enter message to send:</div>
+    <textarea id="message" rows="10" cols="30"></textarea>
+    <div><button type="button" onclick="ws.send($('#message').val())">Send</button></div>
+  </div>
+  <div id="errors" style="color: #ff0000">
+  </div>
+  <div id="messages">
+    Responses:
+  </div>
 </body>
 </html>
