@@ -25,6 +25,29 @@ namespace WebHost_UWP
     /// </summary>
     sealed partial class App : Application
     {
+        /// <summary>
+        /// Simple 'echo' web socket server
+        /// </summary>
+        class WebSocketHandler : IWebSocketRequestHandler
+        {
+
+            public bool WillAcceptRequest(string uri, string protocol)
+            {
+                return (uri.Length == 0) && (protocol == "echo");
+            }
+
+            public void Connected(WebSocket socket)
+            {
+                socket.DataReceived += OnDataReceived;
+            }
+
+            void OnDataReceived(WebSocket socket, string frame)
+            {
+                socket.Send(frame);
+            }
+        }
+
+        // The web server instance
         private BaseHttpServer m_server;
 
         /// <summary>
@@ -44,6 +67,10 @@ namespace WebHost_UWP
                     "Resources.Site",
                     "index.html"
                     )
+                );
+            m_server.AddWebSocketRequestHandler(
+                "/sockets/",
+                new WebSocketHandler()
                 );
             m_server.Start(8000);
         }
