@@ -63,11 +63,6 @@ namespace IotWeb.Server
                     m_listeners.Add(listener);
                 }
             }
-            // Bind to localhost as well
-            listener = new StreamSocketListener();
-            listener.ConnectionReceived += OnConnectionReceived;
-            await listener.BindEndpointAsync(new HostName("127.0.0.1"), Port.ToString());
-            m_listeners.Add(listener);
         }
 
         public void Stop()

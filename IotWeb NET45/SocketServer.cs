@@ -56,7 +56,7 @@ namespace IotWeb.Server
             ThreadPool.QueueUserWorkItem((arg) =>
             {
                 m_listener = new Socket(SocketType.Stream, ProtocolType.IP);
-                m_listener.Bind(new IPEndPoint(IPAddress.Loopback, port));
+                m_listener.Bind(new IPEndPoint(IPAddress.Any, port));
                 m_listener.Blocking = true;
                 m_listener.ReceiveTimeout = 100;
                 m_listener.Listen(BackLog);
