@@ -19,7 +19,7 @@ namespace IotWeb.Common.Http
         public HttpResourceHandler(Assembly assembly, string prefix, string defaultFile = null)
         {
             m_assembly = assembly;
-            m_prefix = string.Format("{0}.{1}", m_assembly.GetName().Name, prefix);
+            m_prefix = string.Format("{0}.{1}", m_assembly.GetName().Name, prefix).Replace(' ', '_');
             m_defaultFile = defaultFile;
         }
 
@@ -27,10 +27,6 @@ namespace IotWeb.Common.Http
         {
             if (request.Method != HttpMethod.Get)
                 throw new HttpMethodNotAllowedException();
-			// DEBUG
-			Cookie cookie = new Cookie("SessionID", Guid.NewGuid().ToString());
-			cookie.Expires = DateTime.Now.AddMinutes(10);
-			response.Cookies.Add(cookie);
             // Replace '/' with '.' to generate the resource name
             string resourceName = uri.Replace('/', '.');
             if (resourceName.StartsWith("."))
