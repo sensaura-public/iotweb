@@ -8,11 +8,10 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using IotWeb.Common;
 using IotWeb.Common.Util;
-using Splat;
 
 namespace IotWeb.Common.Http
 {
-	class HttpRequestProcessor : IEnableLogger
+	class HttpRequestProcessor
 	{
 		// Regular expression for parsing the start line
 		private static Regex RequestStartLine = new Regex(@"^([a-zA-z]+)[ ]+([^ ]+)[ ]+[hH][tT][tT][pP]/([0-9]\.[0-9])$");
@@ -78,7 +77,6 @@ namespace IotWeb.Common.Http
         /// <param name="output"></param>
         public void ProcessHttpRequest(Stream input, Stream output)
 		{
-            this.Log().Debug("** Processing new request");
             // Set up state
             HttpRequest request = null;
             HttpResponse response = null;
@@ -92,7 +90,6 @@ namespace IotWeb.Common.Http
                 // Do we have any content in the body ?
                 if (request.Headers.ContainsKey(HttpHeaders.ContentType))
                 {
-                    this.Log().Debug("Reading request content.");
                     if (!request.Headers.ContainsKey(HttpHeaders.ContentLength))
                         throw new HttpLengthRequiredException();
                     int length;
@@ -117,7 +114,6 @@ namespace IotWeb.Common.Http
                     request.Content = content;
                 }
                 // Process the cookies
-				this.Log().Debug("Processing cookies");
 				if (request.Headers.ContainsKey(HttpHeaders.Cookie))
 				{
 					string[] cookies = request.Headers[HttpHeaders.Cookie].Split(CookieSeparator);
@@ -128,7 +124,6 @@ namespace IotWeb.Common.Http
 						c.Name = parts[0].Trim();
 						if (parts.Length > 1)
 							c.Value = parts[1].Trim();
-						this.Log().Debug("Adding cookie '{0}'", c);
 						request.Cookies.Add(c);
 					}
 				}
@@ -136,7 +131,6 @@ namespace IotWeb.Common.Http
 				HttpContext context = new HttpContext();
 				response = new HttpResponse();
 				// Apply filters
-                this.Log().Debug("Applying middleware filters");
                 m_server.ApplyFilters(request, response, context);
                 // TODO: Check for WebSocket upgrade
 				IWebSocketRequestHandler wsHandler = UpgradeToWebsocket(request, response);
@@ -157,16 +151,14 @@ namespace IotWeb.Common.Http
 				IHttpRequestHandler handler = m_server.GetHandlerForUri(request.URI, out partialUri);
 				if (handler == null)
 					throw new HttpNotFoundException();
-				this.Log().Debug("Dispatching to handler.");
 				handler.HandleRequest(partialUri, request, response, context);
             }
             catch (HttpException ex)
             {
                 parseError = ex;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                this.Log().Debug("Exception while processing request - {0}", ex.Message);
                 parseError = new HttpInternalServerErrorException();
             }
             // Do we need to send back an error response ?
@@ -177,7 +169,6 @@ namespace IotWeb.Common.Http
                 response.ResponseMessage = parseError.Message;
             }
             // Write the response
-            this.Log().Debug("Sending back response");
             response.Send(output);
             output.Flush();
         }
@@ -262,14 +253,12 @@ namespace IotWeb.Common.Http
                     switch (state)
                     {
                         case RequestParseState.StartLine:
-                            this.Log().Debug("Read request start line - '{0}'", line);
                             request = ParseRequestLine(line);
                             if (request == null)
                                 return null; // Just let the connection close
                             state++;
                             break;
                         case RequestParseState.Headers:
-                            this.Log().Debug("Read header line - '{0}'", line);
                             if (line.Length == 0)
                                 state++;
                             else
@@ -282,9 +271,8 @@ namespace IotWeb.Common.Http
             {
                 throw ex;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                this.Log().Debug("Error while parsing request - {0}", ex.Message);
                 throw new HttpInternalServerErrorException("Error parsing request.");
             }
             // All done
@@ -369,10 +357,9 @@ namespace IotWeb.Common.Http
 				if (read == 0)
 					m_connected = false;
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
                 // Any error causes the connection to close
-                this.Log().Debug("Error while reading - {0}", ex.ToString());
 				m_connected = false;
 			}
 		}
@@ -394,7 +381,6 @@ namespace IotWeb.Common.Http
 					// Extract the string (without the CR/LF)
 					line = Encoding.UTF8.GetString(m_buffer, 0, i);
 					ExtractBytes(i + 2);
-                    this.Log().Debug("Read input line '{0}'", line);
 					return true;
 				}
 			}

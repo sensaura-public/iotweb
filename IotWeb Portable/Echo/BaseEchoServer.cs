@@ -5,11 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using IotWeb.Common;
-using Splat;
 
 namespace IotWeb.Common.Echo
 {
-	public class BaseEchoServer : IServer, IEnableLogger
+	public class BaseEchoServer : IServer
 	{
 		private ISocketServer m_server;
 
@@ -36,7 +35,6 @@ namespace IotWeb.Common.Echo
 
 		private void ConnectionRequested(ISocketServer server, string hostname, Stream input, Stream output)
 		{
-			this.Log().Debug("Running echo session for {0}", hostname);
 			byte[] buffer = new byte[32];
 			while (true) 
 			{
@@ -45,7 +43,6 @@ namespace IotWeb.Common.Echo
 					break;
 				output.Write(buffer, 0, read);
 			}
-			this.Log().Debug("Connection terminated.");
 		}
 	}
 }

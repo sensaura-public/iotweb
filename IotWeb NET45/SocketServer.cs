@@ -8,11 +8,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using IotWeb.Common;
-using Splat;
 
 namespace IotWeb.Server
 {
-	public class SocketServer : ISocketServer, IEnableLogger
+	public class SocketServer : ISocketServer
 	{
 		// Constants
 		private const int BackLog = 5; // Maximum pending requests
@@ -100,22 +99,20 @@ namespace IotWeb.Server
                                             new NetworkStream(client, FileAccess.Write, false)
                                             );
                                     }
-                                    else
-                                        this.Log().Debug("No handler provided for connection requests.");
                                 }
-                                catch (Exception ex)
+                                catch (Exception)
                                 {
-                                    this.Log().Debug("Connection handler failed unexpectedly - {0}", ex.Message);
+                                    // Quietly consume the exception
                                 }
                             // Finally, we can close the socket
                             client.Shutdown(SocketShutdown.Both);
-                                client.Close();
+                            client.Close();
                             });
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
-                        this.Log().Debug("Unexpected error while accepting connection request - {0}", ex.Message);
+                        // Quietly consume the exception
                     }
                 }
             });

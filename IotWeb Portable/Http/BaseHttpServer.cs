@@ -5,11 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using IotWeb.Common;
-using Splat;
 
 namespace IotWeb.Common.Http
 {
-	public class BaseHttpServer : IServer, IEnableLogger
+	public class BaseHttpServer : IServer
 	{
 		// Instance variables
         private List<IHttpFilter> m_filters;
@@ -92,7 +91,6 @@ namespace IotWeb.Common.Http
 		/// <param name="output"></param>
 		private void ConnectionRequested(ISocketServer server, string hostname, Stream input, Stream output)
 		{
-			this.Log().Debug("Inbound connection from {0}", hostname);
 			HttpRequestProcessor processor = new HttpRequestProcessor(this);
 			processor.ProcessHttpRequest(input, output);
 		}

@@ -4,11 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Splat;
 
 namespace IotWeb.Common.Http
 {
-	public class WebSocket : IEnableLogger
+	public class WebSocket
 	{
 		/// <summary>
 		/// Helper class to process a WebSocket frame header.
@@ -194,7 +193,6 @@ namespace IotWeb.Common.Http
 					Close();
 					return;
 				}
-				this.Log().Debug("Received frame - opcode = {0}, length = {1}, finished = {2}", header.OpCode, header.Length, header.Finished);
 				// Figure out what to do with the frame
 				bool readData = true;
 				switch (header.OpCode)
@@ -258,7 +256,6 @@ namespace IotWeb.Common.Http
 					if (lastFrame != FrameType.Text)
 						continue;
 					// TODO: Send out the notification for new data
-					this.Log().Debug("Received text frame of {0} bytes", index);
 					string message = Encoding.UTF8.GetString(buffer, 0, (int)index);
 					index = 0;
 					DataReceivedHandler handler = DataReceived;

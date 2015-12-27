@@ -8,11 +8,10 @@ using Windows.Networking;
 using Windows.Networking.Sockets;
 using Windows.Networking.Connectivity;
 using IotWeb.Common;
-using Splat;
 
 namespace IotWeb.Server
 {
-    public class SocketServer : ISocketServer, IEnableLogger
+    public class SocketServer : ISocketServer
     {
         // Instance variables
         private bool m_running;
@@ -98,9 +97,9 @@ namespace IotWeb.Server
                                 s.OutputStream.AsStreamForWrite()
                                 );
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
-                            this.Log().Debug("Unexpected error processing request - {0}", ex.Message);
+                            // Quietly consume the exception
                         }
                         // Close the client socket
                         s.Dispose();
