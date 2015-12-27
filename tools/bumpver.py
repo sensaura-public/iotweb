@@ -9,7 +9,7 @@ from sys import argv
 import re
 
 # Regex to find version stamps
-VERSION_REGEX = re.compile("\"([0-9]+\.[0-9]+\.[0-9]+)\"")
+VERSION_REGEX = re.compile("([0-9]+\.[0-9]+\.[0-9]+)")
 
 def bumpVersion(line, bumpMinor):
   match = VERSION_REGEX.search(line)
@@ -27,9 +27,12 @@ def bumpVersion(line, bumpMinor):
     v[1] = v[1] + 1
   else:
     v[2] = v[2] + 1
-  return "%s%s%s" % (prefix, ".".join([ str(x) for x in v]), suffix)
+  newver =  ".".join([ str(x) for x in v])
+  print "  %s -> %s" % (version, newver)
+  return "%s%s%s" % (prefix, newver, suffix)
 
 def AssemblyVersion(filename, bumpMinor):
+  print filename
   lines = list()
   for line in open(filename, "r"):
     index = line.find("AssemblyVersion")
@@ -45,9 +48,23 @@ def AssemblyVersion(filename, bumpMinor):
   output.close()
 
 def PackageVersion(filename, bumpMinor):
+  print filename
   lines = list()
   for line in open(filename, "r"):
     index = line.find(" Version=")
+    if index >= 0:
+      line = bumpVersion(line, bumpMinor)
+    lines.append(line)
+  # Write the new version
+  output = open(filename, "w")
+  output.write("".join(lines))
+  output.close()
+
+def NugetVersion(filename, bumpMinor):
+  print filename
+  lines = list()
+  for line in open(filename, "r"):
+    index = line.find("<version>")
     if index >= 0:
       line = bumpVersion(line, bumpMinor)
     lines.append(line)
@@ -60,6 +77,7 @@ def PackageVersion(filename, bumpMinor):
 VERFILES = {
   "AssemblyInfo.cs": AssemblyVersion,
   "Package.appxmanifest": PackageVersion,
+  "IotWeb.nuspec": NugetVersion,
   }
 
 def checkFile(arg, dirname, names):
@@ -78,4 +96,3 @@ if __name__ == "__main__":
   for path, name in files:
     fullname = join(path, name)
     VERFILES[name](fullname, bumpMinor)
-    print "Processed '%s'" % fullname

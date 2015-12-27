@@ -33,7 +33,27 @@ if not exist %TOOLDIR%\nuget.exe (
   )
 
 REM Update versions
+@echo Updating versions
 python %TOOLDIR%\bumpver.py
+
+REM Clean and build a release target
+@echo Cleaning
+msbuild /t:Clean /p:Configuration=Release >%TOOLDIR%/clean.log
+if not %errorlevel%==0 (
+  @echo Clean failed. See 'clean.log' for details
+  goto done
+  )
+
+@echo Building release version
+msbuild /t:Build /p:Configuration=Release >%TOOLDIR%/build.log
+if not %errorlevel%==0 (
+  @echo Build failed. See 'build.log' for details
+  goto done
+  )
+
+REM Make the NuGet package
+@echo Building NuGet package
+%TOOLDIR%/nuget.exe pack
 
 REM Finish up
 :done
