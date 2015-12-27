@@ -2,6 +2,8 @@
 using System.IO;
 using System.Net.Sockets;
 using System.Collections.Generic;
+using Windows.Foundation;
+using Windows.System.Threading;
 using Windows.Networking;
 using Windows.Networking.Sockets;
 using Windows.Networking.Connectivity;
@@ -82,24 +84,28 @@ namespace IotWeb.Server
 
         private void OnConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
         {
-            try
+            if ((m_handler != null) && m_running)
             {
-                if ((m_handler != null) && m_running)
-                {
-                    m_handler(
-                        this,
-                        args.Socket.Information.RemoteHostName.CanonicalName.ToString(),
-                        args.Socket.InputStream.AsStreamForRead(),
-                        args.Socket.OutputStream.AsStreamForWrite()
-                        );
-                }
+                IAsyncAction asyncAction = ThreadPool.RunAsync((workItem) =>
+                    {
+                        StreamSocket s = args.Socket;
+                        try
+                        {
+                            m_handler(
+                                this,
+                                s.Information.RemoteHostName.CanonicalName.ToString(),
+                                s.InputStream.AsStreamForRead(),
+                                s.OutputStream.AsStreamForWrite()
+                                );
+                        }
+                        catch (Exception ex)
+                        {
+                            this.Log().Debug("Unexpected error processing request - {0}", ex.Message);
+                        }
+                        // Close the client socket
+                        s.Dispose();
+                    });
             }
-            catch (Exception ex)
-            {
-                this.Log().Debug("Unexpected error processing request - {0}", ex.Message);
-            }
-            // Close the client socket
-            args.Socket.Dispose();
         }
 
     }
