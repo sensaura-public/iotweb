@@ -263,7 +263,7 @@ namespace IotWeb.Common.Http
 					index = 0;
 					DataReceivedHandler handler = DataReceived;
 					if (handler != null)
-						handler.BeginInvoke(this, message, null, null);
+						handler(this, message);
 				}
 			}
 		}
