@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-// Microsoft, in their wisdom, don't expose SHA1 in PCLs. This code is
+﻿// Microsoft, in their wisdom, don't expose SHA1 in PCLs. This code is
 // derived from the Mono implementation ...
 //   https://github.com/mono/mono/blob/master/mcs/class/corlib/System.Security.Cryptography/SHA1CryptoServiceProvider.cs
 // Original file comments below.

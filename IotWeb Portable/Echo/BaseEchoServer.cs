@@ -1,10 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using IotWeb.Common;
+﻿using System.IO;
 
 namespace IotWeb.Common.Echo
 {

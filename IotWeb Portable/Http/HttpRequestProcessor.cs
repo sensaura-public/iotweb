@@ -1,12 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Net;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using IotWeb.Common;
 using IotWeb.Common.Util;
 
 namespace IotWeb.Common.Http
