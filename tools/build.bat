@@ -58,4 +58,3 @@ REM Make the NuGet package
 REM Finish up
 :done
 cd %OLDDIR%
-cmd /k
