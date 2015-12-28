@@ -2,7 +2,7 @@
 <package >
   <metadata minClientVersion="3.1">
     <id>IotWeb</id>
-    <version>0.8.0</version>
+    <version>0.8.5</version>
     <title>HTTP/WebSocket server for UWP and .NET 4.5</title>
     <authors>The Sensaura Project</authors>
     <owners>The Sensaura Project</owners>
@@ -15,11 +15,13 @@
     <tags>iot iot-core server</tags>
   </metadata>
   <files>
-    <file src="IotWeb Portable/bin/Release/IotWeb_Portable/IotWeb.Common.dll" target="lib/dotnet/IotWeb.Common.dll"/>
-    <file src="IotWeb Portable/bin/Release/IotWeb_Portable/IotWeb.Common.pdb" target="lib/dotnet/IotWeb.Common.pdb"/>
-    <file src="IotWeb NET45/bin/Release/IotWeb_NET45/IotWeb.Server.dll" target="lib/net45/IotWeb.Server.dll"/>
-    <file src="IotWeb NET45/bin/Release/IotWeb_NET45/IotWeb.Server.pdb" target="lib/net45/IotWeb.Server.pdb"/>
-    <file src="IotWeb UWP/bin/Release/IotWeb_UWP/IotWeb.Server.dll" target="lib/uap10.0/IotWeb.Server.dll"/>
-    <file src="IotWeb UWP/bin/Release/IotWeb_UWP/IotWeb.Server.pdb" target="lib/uap10.0/IotWeb.Server.pdb"/>
+    <file src="IotWeb Portable\bin\Release\IotWeb_Portable\IotWeb.Common.dll" target="lib\net45\IotWeb.Common.dll"/>
+    <file src="IotWeb Portable\bin\Release\IotWeb_Portable\IotWeb.Common.pdb" target="lib\net45\IotWeb.Common.pdb"/>
+    <file src="IotWeb Portable\bin\Release\IotWeb_Portable\IotWeb.Common.dll" target="lib\uap10.0\IotWeb.Common.dll"/>
+    <file src="IotWeb Portable\bin\Release\IotWeb_Portable\IotWeb.Common.pdb" target="lib\uap10.0\IotWeb.Common.pdb"/>
+    <file src="IotWeb NET45\bin\Release\IotWeb_NET45\IotWeb.Server.dll" target="lib\net45\IotWeb.Server.dll"/>
+    <file src="IotWeb NET45\bin\Release\IotWeb_NET45\IotWeb.Server.pdb" target="lib\net45\IotWeb.Server.pdb"/>
+    <file src="IotWeb UWP\bin\Release\IotWeb_UWP\IotWeb.Server.dll" target="lib\uap10.0\IotWeb.Server.dll"/>
+    <file src="IotWeb UWP\bin\Release\IotWeb_UWP\IotWeb.Server.pdb" target="lib\uap10.0\IotWeb.Server.pdb"/>
   </files>
 </package>
