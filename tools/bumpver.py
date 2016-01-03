@@ -24,6 +24,7 @@ def bumpVersion(line, bumpMinor):
   # Split apart the version
   v = list([ int(x) for x in version.split(".") ])
   if bumpMinor:
+    v[2] = 0
     v[1] = v[1] + 1
   else:
     v[2] = v[2] + 1
