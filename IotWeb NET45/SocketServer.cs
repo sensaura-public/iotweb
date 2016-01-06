@@ -13,7 +13,6 @@ namespace IotWeb.Server
 		private const int BackLog = 5; // Maximum pending requests
 
 		// Instance variables
-		private bool m_running;
 		private ConnectionHandler m_handler;
         private Socket m_listener;
 
@@ -30,28 +29,40 @@ namespace IotWeb.Server
 			{
 				lock (this)
 				{
-					if (m_running)
+					if (Running)
 						throw new InvalidOperationException("Cannot change handler while server is running.");
 					m_handler = value;
 				}
 			}
 		}
 
-		public void Start(int port)
+		public bool Running { get; private set; }
+
+		public event ServerStoppedHandler ServerStopped;
+
+		/// <summary>
+		/// Constructor with a port to listen on
+		/// </summary>
+		/// <param name="port"></param>
+		public SocketServer(int port)
+		{
+			Port = port;
+		}
+
+		public void Start()
 		{
 			// Make sure we are not already running
 			lock (this)
 			{
-				if (m_running)
+				if (Running)
 					throw new InvalidOperationException("Socket server is already running.");
-				m_running = true;
+				Running = true;
 			}
-			Port = port;
             // Set up the listener and bind
             ThreadPool.QueueUserWorkItem((arg) =>
             {
                 m_listener = new Socket(SocketType.Stream, ProtocolType.IP);
-                m_listener.Bind(new IPEndPoint(IPAddress.Any, port));
+                m_listener.Bind(new IPEndPoint(IPAddress.Any, Port));
                 m_listener.Blocking = true;
                 m_listener.ReceiveTimeout = 100;
                 m_listener.Listen(BackLog);
@@ -60,8 +71,8 @@ namespace IotWeb.Server
                 {
                     lock (this)
                     {
-                        if (!m_running)
-                            return;
+                        if (!Running)
+                            break;
                     }
                     try
                     {
@@ -111,6 +122,13 @@ namespace IotWeb.Server
                         // Quietly consume the exception
                     }
                 }
+				// Fire the stopped events
+				lock (this)
+				{
+					ServerStoppedHandler handler = ServerStopped;
+					if (handler != null)
+						handler(this);
+				}
             });
 		}
 
@@ -118,7 +136,10 @@ namespace IotWeb.Server
 		{
 			lock (this)
 			{
-				m_running = false;
+				if (!Running)
+					return;
+				// Shutdown the server
+				Running = false;
 			}
 		}
 
