@@ -10,15 +10,31 @@
     public interface IHttpFilter
     {
         /// <summary>
-        /// Apply the filter.
+        /// Invoked before the request has been processed.
         /// 
-        /// A filter may modify properties of the request, the response and
-        /// the context. This changes may effect how the request is processed
-        /// by a handler.
+		/// This method is called when the request has been parsed but before it has
+		/// been dispatched to a handler. The filter may modify the request, response
+		/// and context information as well as prohibit the request from being handled
+		/// at all.
         /// </summary>
         /// <param name="request"></param>
         /// <param name="response"></param>
         /// <param name="context"></param>
-        void ApplyFilter(HttpRequest request, HttpResponse response, HttpContext context);
+		/// <returns>
+		/// True if the request should be processed in the normal manner or false if
+		/// it should not be dispatched to a handler.
+		/// </returns>
+        bool Before(HttpRequest request, HttpResponse response, HttpContext context);
+
+		/// <summary>
+		/// Invoked after the request has been processed.
+		/// 
+		/// This method is called when the request has been processed by a handler
+		/// (or it has been determined that no handler is available for the request).
+		/// </summary>
+		/// <param name="request"></param>
+		/// <param name="response"></param>
+		/// <param name="context"></param>
+		void After(HttpRequest request, HttpResponse response, HttpContext context);
     }
 }

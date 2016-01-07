@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Collections.Generic;
 
 namespace IotWeb.Common.Http
@@ -103,14 +104,49 @@ namespace IotWeb.Common.Http
         /// <param name="request"></param>
         /// <param name="response"></param>
         /// <param name="context"></param>
-        internal void ApplyFilters(HttpRequest request, HttpResponse response, HttpContext context)
+        internal bool ApplyBeforeFilters(HttpRequest request, HttpResponse response, HttpContext context)
         {
+			bool allowHandling = true;
             lock (m_filters)
             {
-                foreach (IHttpFilter filter in m_filters)
-                    filter.ApplyFilter(request, response, context);
+				foreach (IHttpFilter filter in m_filters)
+				{
+					try
+					{
+						allowHandling = allowHandling && filter.Before(request, response, context);
+					}
+					catch (Exception)
+					{
+						// Just silently ignore it
+					}
+				}
             }
+			return allowHandling;
         }
+
+		/// <summary>
+		/// Apply all the filters to the current request
+		/// </summary>
+		/// <param name="request"></param>
+		/// <param name="response"></param>
+		/// <param name="context"></param>
+		internal void ApplyAfterFilters(HttpRequest request, HttpResponse response, HttpContext context)
+		{
+			lock (m_filters)
+			{
+				foreach (IHttpFilter filter in m_filters)
+				{
+					try
+					{
+						filter.After(request, response, context);
+					}
+					catch (Exception)
+					{
+						// Just silently ignore it
+					}
+				}
+			}
+		}
 
         /// <summary>
         /// Find the matching handler for the request
