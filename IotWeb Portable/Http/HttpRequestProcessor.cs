@@ -77,6 +77,7 @@ namespace IotWeb.Common.Http
             HttpRequest request = null;
             HttpResponse response = null;
             HttpException parseError = null;
+			HttpContext context = null;
             // Process the request
             try
             {
@@ -124,30 +125,34 @@ namespace IotWeb.Common.Http
 					}
 				}
 				// We have at least a partial request, create the matching response
-				HttpContext context = new HttpContext();
+				context = new HttpContext();
 				response = new HttpResponse();
 				// Apply filters
-                m_server.ApplyFilters(request, response, context);
-                // TODO: Check for WebSocket upgrade
-				IWebSocketRequestHandler wsHandler = UpgradeToWebsocket(request, response);
-				if (wsHandler!=null)
+				if (m_server.ApplyBeforeFilters(request, response, context))
 				{
-					// Write the response back to accept the connection
-					response.Send(output);
-					output.Flush();
-					// Now we can process the websocket
-					WebSocket ws = new WebSocket(input, output);
-					wsHandler.Connected(ws);
-					ws.Run();
-					// Once the websocket connection is finished we don't need to do anything else
-					return;
+					// Check for WebSocket upgrade
+					IWebSocketRequestHandler wsHandler = UpgradeToWebsocket(request, response);
+					if (wsHandler != null)
+					{
+						// Apply the after filters here
+						m_server.ApplyAfterFilters(request, response, context);
+						// Write the response back to accept the connection
+						response.Send(output);
+						output.Flush();
+						// Now we can process the websocket
+						WebSocket ws = new WebSocket(input, output);
+						wsHandler.Connected(ws);
+						ws.Run();
+						// Once the websocket connection is finished we don't need to do anything else
+						return;
+					}
+					// Dispatch to the handler
+					string partialUri;
+					IHttpRequestHandler handler = m_server.GetHandlerForUri(request.URI, out partialUri);
+					if (handler == null)
+						throw new HttpNotFoundException();
+					handler.HandleRequest(partialUri, request, response, context);
 				}
-				// Dispatch to the handler
-				string partialUri;
-				IHttpRequestHandler handler = m_server.GetHandlerForUri(request.URI, out partialUri);
-				if (handler == null)
-					throw new HttpNotFoundException();
-				handler.HandleRequest(partialUri, request, response, context);
             }
             catch (HttpException ex)
             {
@@ -164,7 +169,9 @@ namespace IotWeb.Common.Http
                 response.ResponseCode = parseError.ResponseCode;
                 response.ResponseMessage = parseError.Message;
             }
-            // Write the response
+			// Apply the after filters here
+			m_server.ApplyAfterFilters(request, response, context);
+			// Write the response
             response.Send(output);
             output.Flush();
         }
