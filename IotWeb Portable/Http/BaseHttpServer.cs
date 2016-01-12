@@ -12,23 +12,30 @@ namespace IotWeb.Common.Http
 
         internal ISocketServer SocketServer { get; private set; }
 
-        public int Port
-		{
-			get { return SocketServer.Port; }
-		}
+		public event ServerStoppedHandler ServerStopped;
+
+		public bool Running { get { return SocketServer.Running; } }
 
 		protected BaseHttpServer(ISocketServer server)
 		{
 			SocketServer = server;
 			SocketServer.ConnectionRequested = ConnectionRequested;
+			SocketServer.ServerStopped += OnServerStopped;
             m_filters = new List<IHttpFilter>();
             m_handlers = new Dictionary<string, IHttpRequestHandler>();
 			m_wsHandlers = new Dictionary<string, IWebSocketRequestHandler>();
 		}
 
-		public void Start(int port)
+		private void OnServerStopped(IServer server)
 		{
-			SocketServer.Start(port);
+			ServerStoppedHandler handler = ServerStopped;
+			if (handler != null)
+				handler(this);
+		}
+
+		public void Start()
+		{
+			SocketServer.Start();
 		}
 
 		public void Stop()

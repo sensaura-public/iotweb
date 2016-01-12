@@ -1,10 +1,14 @@
 ﻿namespace IotWeb.Common
 {
+	public delegate void ServerStoppedHandler(IServer server);
+
 	public interface IServer
 	{
-		int Port { get; }
+		event ServerStoppedHandler ServerStopped;
 
-		void Start(int port);
+		bool Running { get; }
+
+		void Start();
 
 		void Stop();
 	}

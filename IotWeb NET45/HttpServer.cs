@@ -4,8 +4,8 @@ namespace IotWeb.Server
 {
 	public class HttpServer : BaseHttpServer
 	{
-		public HttpServer()
-			: base(new SocketServer())
+		public HttpServer(int port)
+			: base(new SocketServer(port))
 		{
 			// No configuration required
 		}
