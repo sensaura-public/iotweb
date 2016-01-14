@@ -158,6 +158,30 @@ namespace IotWeb.Common.Http
 		}
 
 		/// <summary>
+		/// Send a portion of an array as a binary frame.
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="offset"></param>
+		/// <param name="length"></param>
+		public void Send(byte[] data, int offset, int length)
+		{
+			if (m_closed)
+				return;
+			SendFrame(BinaryFrame, data, offset, length);
+		}
+
+		/// <summary>
+		/// Send an array of bytes as a binary frame.
+		/// </summary>
+		/// <param name="data"></param>
+		public void Send(byte[] data)
+		{
+			if (m_closed)
+				return;
+			SendFrame(BinaryFrame, data, 0, data.Length);
+		}
+
+		/// <summary>
 		/// Close the socket
 		/// </summary>
 		public void Close()
