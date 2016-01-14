@@ -33,7 +33,7 @@ namespace WebHost.Desktop
         static void Main(string[] args)
 		{
             // Set up and run the server
-			HttpServer server = new HttpServer();
+			HttpServer server = new HttpServer(8000);
             server.AddHttpRequestHandler(
                 "/",
                 new HttpResourceHandler(
@@ -46,7 +46,7 @@ namespace WebHost.Desktop
 				"/sockets/",
 				new WebSocketHandler()
 				);
-			server.Start(8000);
+			server.Start();
             Console.WriteLine("Server running - press any key to stop.");
             while (!Console.KeyAvailable)
                 Thread.Sleep(100);
