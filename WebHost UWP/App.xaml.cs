@@ -59,7 +59,7 @@ namespace WebHost_UWP
             this.InitializeComponent();
             this.Suspending += OnSuspending;
             // Run the web server
-            m_server = new HttpServer();
+            m_server = new HttpServer(8000);
             m_server.AddHttpRequestHandler(
                 "/",
                 new HttpResourceHandler(
@@ -72,7 +72,7 @@ namespace WebHost_UWP
                 "/sockets/",
                 new WebSocketHandler()
                 );
-            m_server.Start(8000);
+            m_server.Start();
         }
 
         /// <summary>
