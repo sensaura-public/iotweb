@@ -1,0 +1,8 @@
+* Changed IServer/ISocket server interface to take the port number as a parameter
+  in the constructor rather than on the Start() method. This makes it more
+  generic (and simplifies the integration with SensHub).
+* Added support for sending binary WebSocket frames (requested on Slack).
+* Changed filter interface to support before and after filter hooks. This makes
+  it easy to do things like time request handling and perform logging. Also
+  allows for custom HTTP error pages.
+  
