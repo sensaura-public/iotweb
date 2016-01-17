@@ -13,10 +13,10 @@ namespace IotWeb.Server
     public class SocketServer : ISocketServer
     {
         // Instance variables
-        private bool m_running;
         private ConnectionHandler m_handler;
         private List<StreamSocketListener> m_listeners;
 
+        public bool Running { get; private set; }
         public int Port { get; private set; }
 
         public ConnectionHandler ConnectionRequested
@@ -30,27 +30,29 @@ namespace IotWeb.Server
             {
                 lock (this)
                 {
-                    if (m_running)
+                    if (Running)
                         throw new InvalidOperationException("Cannot change handler while server is running.");
                     m_handler = value;
                 }
             }
         }
 
-        public SocketServer()
+        public event ServerStoppedHandler ServerStopped;
+
+        public SocketServer(int port)
         {
-            m_running = false;
+            Running = false;
+            Port = port;
         }
 
-        public async void Start(int port)
+        public async void Start()
         {
             lock (this)
             {
-                if (m_running)
+                if (Running)
                     throw new InvalidOperationException("Server is already running.");
-                m_running = true;
+                Running = true;
             }
-            Port = port;
             m_listeners = new List<StreamSocketListener>();
             StreamSocketListener listener;
             foreach (HostName candidate in NetworkInformation.GetHostNames())
@@ -69,20 +71,24 @@ namespace IotWeb.Server
         {
             lock(this)
             {
-                if (!m_running)
+                if (!Running)
                     return;
-                m_running = false;
+                Running = false;
                 // Clean up all listeners
                 foreach (StreamSocketListener listener in m_listeners)
                     listener.Dispose();
                 m_listeners.Clear();
                 m_listeners = null;
+                // Fire the stopped events
+                ServerStoppedHandler handler = ServerStopped;
+                if (handler != null)
+                    handler(this);
             }
         }
 
         private void OnConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
         {
-            if ((m_handler != null) && m_running)
+            if ((m_handler != null) && Running)
             {
                 IAsyncAction asyncAction = ThreadPool.RunAsync((workItem) =>
                     {
