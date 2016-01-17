@@ -2,7 +2,7 @@
 <package >
   <metadata minClientVersion="3.1">
     <id>IotWeb</id>
-    <version>0.8.5</version>
+    <version>0.8.6</version>
     <title>HTTP/WebSocket server for UWP and .NET 4.5</title>
     <authors>The Sensaura Project</authors>
     <owners>The Sensaura Project</owners>
