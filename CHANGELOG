@@ -1,3 +1,7 @@
+* Changed to case insensitive check on Websocket upgrade headers (required for
+  MS Edge and compliance with RFC6455). HT: ossandust
+* Fixed Javascript in sample page to correctly handle port 80. HT: ossandust
+
 V0.8.6 - January 17, 2016
 
 * Changed IServer/ISocket server interface to take the port number as a parameter
