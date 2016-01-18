@@ -11,7 +11,7 @@
     $(document).ready(
       function() {
         if ("WebSocket" in window) {
-          var wsURL = "ws://" + location.hostname + (location.port ? ':' + location.port : ' ') + "/sockets/";
+          var wsURL = "ws://" + location.hostname + (location.port ? ':' + location.port : '') + "/sockets/";
           var connection = new WebSocket(wsURL, [ 'echo' ]);
           connection.onopen = function() {
             ws = connection;

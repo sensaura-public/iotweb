@@ -186,9 +186,9 @@ namespace IotWeb.Common.Http
 		private IWebSocketRequestHandler UpgradeToWebsocket(HttpRequest request, HttpResponse response)
 		{
 			// Check for required headers
-			if (!(request.Headers.ContainsKey(HttpHeaders.Connection) && request.Headers[HttpHeaders.Connection].Contains("Upgrade")))
+			if (!(request.Headers.ContainsKey(HttpHeaders.Connection) && request.Headers[HttpHeaders.Connection].ToLower().Contains("upgrade")))
 				return null;
-			if (!(request.Headers.ContainsKey(HttpHeaders.Upgrade) && request.Headers[HttpHeaders.Upgrade].Contains("websocket")))
+			if (!(request.Headers.ContainsKey(HttpHeaders.Upgrade) && request.Headers[HttpHeaders.Upgrade].ToLower().Contains("websocket")))
 				return null;
 			if (!request.Headers.ContainsKey(SecWebSocketVersion))
 				return null;
