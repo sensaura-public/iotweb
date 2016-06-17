@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Linq;
 using System.Reflection;
 
 namespace IotWeb.Common.Http
@@ -17,12 +18,23 @@ namespace IotWeb.Common.Http
             m_defaultFile = defaultFile;
         }
 
+        private static string RequestToNamespace(string uri)
+        {
+            var urlParts = uri.Split('/');
+            var fileName = urlParts.Last();
+            var location = string.Join(".", urlParts.Take(urlParts.Length - 1));
+            var locationNs = location.Replace("@", "_").Replace("-", "_");
+
+            var resourceNs = locationNs + "." + fileName;
+            return resourceNs;
+        }
+
         public void HandleRequest(string uri, HttpRequest request, HttpResponse response, HttpContext context)
         {
             if (request.Method != HttpMethod.Get)
                 throw new HttpMethodNotAllowedException();
-            // Replace '/' with '.' to generate the resource name
-            string resourceName = uri.Replace('/', '.');
+            // Replace '/' with '.' and special characters with _ to generate the resource name
+            string resourceName = RequestToNamespace(uri);
             if (resourceName.StartsWith("."))
                 resourceName = m_prefix + resourceName;
             else
