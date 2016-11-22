@@ -97,12 +97,25 @@ namespace IotWeb.Common.Http
                         throw new HttpRequestEntityTooLargeException();
                     // Read the data in
                     MemoryStream content = new MemoryStream();
+                    //23.08.2016 - Changes for supporting POST Method 
+                    int contentCopyCounter = 0;
+                    int bodyReadCount = 0;
                     while (m_connected && (content.Length != length))
                     {
-                        ReadData(input);
+                        if (contentCopyCounter > 0)
+                        {
+                            int bytesToRead = ((length - bodyReadCount) > InputBufferSize) ? InputBufferSize : (length - bodyReadCount);
+                            ReadData(input, bytesToRead);                            
+                        }
+
+                        bodyReadCount += m_index;
+
                         content.Write(m_buffer, 0, m_index);
                         ExtractBytes(m_index);
+                        contentCopyCounter++;
                     }
+                    //23.08.2016 - End of Changes for supporting POST Method
+
                     // Did the connection drop while reading?
                     if (!m_connected)
                         return;
@@ -391,6 +404,30 @@ namespace IotWeb.Common.Http
             ReadData(input);
             return false;
 		}
-		#endregion
-	}
+
+        /// <summary>
+        /// 23.08.2016 - Changes for supporting POST Method - Added a new overload for reading the content data from the input stream
+		/// Read data from the stream into the buffer. 
+		/// </summary>
+		/// <param name="input"></param>
+        /// <param name="offset"></param>
+		/// <returns></returns>
+		private void ReadData(Stream input, int count)
+        {
+            try
+            {
+                int read = input.Read(m_buffer, 0, count);
+                m_index += read;
+                if (read == 0)
+                    m_connected = false;
+            }
+            catch (Exception exp)
+            {
+                // Any error causes the connection to close
+                m_connected = false;
+            }
+        }
+
+        #endregion
+    }
 }
