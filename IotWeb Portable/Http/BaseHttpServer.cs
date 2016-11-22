@@ -204,4 +204,15 @@ namespace IotWeb.Common.Http
 
 
 	}
+
+    /////////////////////////////////Changes done locally to fix HTTP 1.1 on Safari 10 websocket error on 22.11.2016/////////////////////
+    /// <summary>
+    /// Defines HTTP version
+    /// </summary>
+    public enum HttpVersion
+    {
+        Ver1_0,
+        Ver1_1
+    }
+    /////////////////////////////////Changes done locally to fix HTTP 1.1 on Safari 10 websocket error on 22.11.2016/////////////////////
 }

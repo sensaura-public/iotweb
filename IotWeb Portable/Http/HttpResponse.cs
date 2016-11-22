@@ -21,15 +21,24 @@ namespace IotWeb.Common.Http
 			ResponseMessage = null;
             Content = new MemoryStream();
 		}
-
+        
 		/// <summary>
 		/// Write the response to the output stream
 		/// </summary>
 		/// <param name="output"></param>
-		internal void Send(Stream output)
+		internal void Send(Stream output, HttpVersion version = HttpVersion.Ver1_0)
 		{
             // Write the response start line
-            WriteLine(output, String.Format("HTTP/1.0 {0} {1}", ResponseCode.ResponseCode(), ResponseCode.ResponseMessage(ResponseMessage)));
+            /////////////////////////////////Changes done locally to fix HTTP 1.1 on Safari 10 websocket error on 22.11.2016/////////////////////
+            if (version == HttpVersion.Ver1_0)
+            {
+                WriteLine(output, String.Format("HTTP/1.0 {0} {1}", ResponseCode.ResponseCode(), ResponseCode.ResponseMessage(ResponseMessage)));
+            }
+            else if(version == HttpVersion.Ver1_1)
+            {
+                WriteLine(output, String.Format("HTTP/1.1 {0} {1}", ResponseCode.ResponseCode(), ResponseCode.ResponseMessage(ResponseMessage)));
+            }
+            /////////////////////////////////Changes done locally to fix HTTP 1.1 on Safari 10 websocket error on 22.11.2016/////////////////////
             // Set content length accordingly
             Headers[HttpHeaders.ContentLength] = Content.Position.ToString();
             // Write the headers

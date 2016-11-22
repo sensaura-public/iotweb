@@ -149,8 +149,9 @@ namespace IotWeb.Common.Http
 					{
 						// Apply the after filters here
 						m_server.ApplyAfterFilters(request, response, context);
-						// Write the response back to accept the connection
-						response.Send(output);
+                        // Write the response back to accept the connection
+                        /////////////////////////////////Changes done locally to fix HTTP 1.1 on Safari 10 websocket error on 22.11.2016/////////////////////
+                        response.Send(output, HttpVersion.Ver1_1);
 						output.Flush();
 						// Now we can process the websocket
 						WebSocket ws = new WebSocket(input, output);
