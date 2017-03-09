@@ -1,5 +1,9 @@
 # Embedded HTTP and WebSocket Server for UWP/.NET 4.5
 
+This is a Fork of [IoTWeb] (https://github.com/sensaura-public/iotweb), and includes following bug fixes
+* [HttpHandler was not being called for POST methods] (https://github.com/sensaura-public/iotweb/issues/6)
+* Websocket handshake issue on Safari 10.0.1 (11602.2.14.0.7) with Invalid HTTP version string: HTTP/1.0 error.
+
 The IotWeb class library allows you to embed a simple HTTP and WebSocket server into your C# application. The library supports both the .NET 4.5 framework as well as the Universal Windows Platform allowing you to target [Mono](http://www.mono-project.com/), Windows Desktop and [Windows 10 IoT Core](https://dev.windows.com/en-us/iot).
 
 The library is released under the [Creative Commons BY-SA license](http://creativecommons.org/licenses/by-sa/4.0/) - this means you can use the library in commercial and non-commercial projects as long as you provide attribution (a link to this page will be fine) and release any changes you make under the same license.
