@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using IotWeb.Common.Util;
+using Newtonsoft.Json;
 
 namespace IotWeb.Common.Http
 {
@@ -35,9 +38,10 @@ namespace IotWeb.Common.Http
 		private const int InputBufferSize = 1024;
 		private const byte CR = 0x0d;
 		private const byte LF = 0x0a;
+        private const string SessionName = "IoTSession";
 
-		// WebSocket header fields
-		private static string SecWebSocketKey = "Sec-WebSocket-Key";
+        // WebSocket header fields
+        private static string SecWebSocketKey = "Sec-WebSocket-Key";
 		private static string SecWebSocketProtocol = "Sec-WebSocket-Protocol";
 		private static string SecWebSocketVersion = "Sec-WebSocket-Version";
 		private static string SecWebSocketAccept = "Sec-WebSocket-Accept";
@@ -139,9 +143,75 @@ namespace IotWeb.Common.Http
 				}
 				// We have at least a partial request, create the matching response
 				context = new HttpContext();
-				response = new HttpResponse();
-				// Apply filters
-				if (m_server.ApplyBeforeFilters(request, response, context))
+
+                var sessionId = GetSessionIdentifier(request.Cookies);
+
+                SessionHandler sessionHandler;
+
+                if (string.IsNullOrEmpty(sessionId))
+                {
+                    var newSessionId = Utilities.GetNewSessionIdentifier();
+
+                    sessionHandler = new SessionHandler(newSessionId, m_server.SessionStorageHandler);
+                    context.SessionHandler = sessionHandler;
+
+                    var clearSessionTask = sessionHandler.ClearExpiredSessions();
+                    clearSessionTask.Wait();
+
+                    var sessionSavedTask = sessionHandler.SaveSessionData();
+                    sessionSavedTask.Wait();
+                    var isSaved = sessionSavedTask.Result;
+
+                    if (isSaved)
+                    {
+
+                    }
+                    else
+                    {
+
+                    }
+                }
+                else
+                {
+                    sessionHandler = new SessionHandler(sessionId, m_server.SessionStorageHandler);
+                    context.SessionHandler = sessionHandler;
+
+                    var clearSessionTask = sessionHandler.ClearExpiredSessions();
+                    clearSessionTask.Wait();
+
+                    var sessionDataTask = sessionHandler.GetSessionData(sessionId);
+                    sessionDataTask.Wait();
+                    var isRetrieved = sessionDataTask.Result;
+
+                    if (isRetrieved)
+                    {
+
+                    }
+                    else
+                    {
+
+                    }
+                }
+
+                response = new HttpResponse();
+
+                Cookie sessionCookie = new Cookie
+                {
+                    Name = SessionName,
+                    Value = context.SessionHandler.SessionId
+                };
+
+                //servername = Lcase(Request.ServerVariables("SERVER_NAME"))
+                //Response.Status = "301 Moved Permanently"
+                //Response.AddHeader "Location", "http://yoursite"
+                //Response.AddHeader "Referer", servername
+                //Response.End()
+
+                response.Cookies.Add(sessionCookie);
+
+
+                // Apply filters
+                if (m_server.ApplyBeforeFilters(request, response, context))
 				{
 					// Check for WebSocket upgrade
 					IWebSocketRequestHandler wsHandler = UpgradeToWebsocket(request, response);
@@ -166,7 +236,13 @@ namespace IotWeb.Common.Http
 					if (handler == null)
 						throw new HttpNotFoundException();
 					handler.HandleRequest(partialUri, request, response, context);
-				}
+
+                    if (sessionHandler.IsChanged)
+                    {
+                        var sessionSavedTask = sessionHandler.SaveSessionData();
+                        sessionSavedTask.Wait();
+                    }
+                }
             }
             catch (HttpException ex)
             {
@@ -427,6 +503,11 @@ namespace IotWeb.Common.Http
                 // Any error causes the connection to close
                 m_connected = false;
             }
+        }
+
+        private string GetSessionIdentifier(CookieCollection cookies)
+        {
+            return cookies[SessionName]?.Value;
         }
 
         #endregion

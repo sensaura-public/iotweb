@@ -29,7 +29,7 @@ namespace IotWeb.Common.Http
             return resourceNs;
         }
 
-        public void HandleRequest(string uri, HttpRequest request, HttpResponse response, HttpContext context)
+        public virtual void HandleRequest(string uri, HttpRequest request, HttpResponse response, HttpContext context)
         {
             if (request.Method != HttpMethod.Get)
                 throw new HttpMethodNotAllowedException();

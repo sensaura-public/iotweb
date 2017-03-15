@@ -31,5 +31,10 @@ namespace IotWeb.Common.Util
         {
             return GetContainingAssembly(typeof(T));
         }
+
+        public static string GetNewSessionIdentifier()
+        {
+            return Guid.NewGuid().ToString();
+        }
     }
 }
