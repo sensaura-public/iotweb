@@ -9,6 +9,6 @@ namespace IotWeb.Common.Util
     public enum SessionAttributes
     {
         Size,
-        LastModified
+        LastAccessTime
     }
 }

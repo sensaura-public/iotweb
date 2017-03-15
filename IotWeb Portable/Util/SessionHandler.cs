@@ -12,9 +12,10 @@ namespace IotWeb.Common.Util
     public class SessionHandler
     {
         private readonly string _sessionId;
-        private IDictionary<string, string> _sessionData;
+        private Dictionary<string, string> _sessionData;
         private readonly ISessionStorageHandler _sessionStorageHandler;
         private bool _isChanged;
+        
 
         public string SessionId
         {
@@ -36,8 +37,7 @@ namespace IotWeb.Common.Util
 
         public async Task<bool> SaveSessionData()
         {
-            var sessionData = JsonConvert.SerializeObject(_sessionData);
-            var isSaved = await _sessionStorageHandler.SaveDataAsync(_sessionId, sessionData);
+            var isSaved = await _sessionStorageHandler.SaveDataAsync(_sessionId, _sessionData);
             _isChanged = false;
             return isSaved;
         }
@@ -51,7 +51,7 @@ namespace IotWeb.Common.Util
                 var sessionData = await _sessionStorageHandler.GetDataAsync(_sessionId);
                 if (sessionData != null)
                 {
-                    _sessionData = JsonConvert.DeserializeObject<Dictionary<string, string>>(sessionData);
+                    _sessionData = sessionData;
                     isRetrieved = true;
                 }
 
@@ -99,7 +99,5 @@ namespace IotWeb.Common.Util
             return null;
 
         }
-
-
     }
 }

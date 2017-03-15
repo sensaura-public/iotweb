@@ -50,7 +50,6 @@
     <Compile Include="Http\IHttpRequestHandler.cs" />
     <Compile Include="Http\IWebSocketRequestHandler.cs" />
     <Compile Include="Http\MimeType.cs" />
-    <Compile Include="Http\SessionDictionary.cs" />
     <Compile Include="Http\WebSocket.cs" />
     <Compile Include="Interfaces\ISessionStorageHandler.cs" />
     <Compile Include="IServer.cs" />

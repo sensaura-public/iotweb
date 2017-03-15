@@ -6,16 +6,11 @@ namespace IotWeb.Common.Interfaces
 {
     public interface ISessionStorageHandler
     {
-        SessionStorageConfiguration SessionStorageConfiguration
-        {
-            get;
-        }
-
-        Task<bool> SaveDataAsync(string fileName, string data);
-        Task<string> GetDataAsync(string fileName);
+        Task<bool> SaveDataAsync(string sessionId, IDictionary<string, string> data);
+        Task<Dictionary<string, string>> GetDataAsync(string sessionId);
         Task<bool> DeleteSessionsAsync();
         Task<bool> DeleteSessionAsync(string sessionId);
-        Task<Dictionary<SessionAttributes, object>> GetSessionMetadata(string fileName);
+        Task<Dictionary<SessionAttributes, object>> GetSessionMetadata(string sessionId);
 
     }
 }

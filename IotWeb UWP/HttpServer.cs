@@ -7,7 +7,7 @@ namespace IotWeb.Server
     public class HttpServer : BaseHttpServer
     {
         public HttpServer(int port, SessionStorageConfiguration sessionStorageConfiguration)
-            : base(new SocketServer(port), new SessionFileStorageHandler(sessionStorageConfiguration))
+            : base(new SocketServer(port), new HybridSessionStorageHandler(sessionStorageConfiguration))
         {
             // No configuration required
         }
