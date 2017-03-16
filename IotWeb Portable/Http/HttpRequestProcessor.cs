@@ -163,7 +163,7 @@ namespace IotWeb.Common.Http
                 if (isNewRequest)
                 {   
                     sessionHandler.SaveSessionData();
-                    response.Cookies.Add(new Cookie(SessionName, context.SessionHandler.SessionId));
+                    response.Cookies.Add(new Cookie(SessionName, sessionHandler.SessionId));
                 }
                 else
                 {
@@ -200,6 +200,12 @@ namespace IotWeb.Common.Http
                     if (sessionHandler.IsChanged)
                     {
                         sessionHandler.SaveSessionData();
+                    }
+
+				    if (sessionHandler.IsSessionDestroyed)
+				    {
+				        sessionHandler.IsSessionDestroyed = false;
+                        response.Cookies.Add(new Cookie(SessionName, sessionHandler.SessionId));
                     }
                 }
             }

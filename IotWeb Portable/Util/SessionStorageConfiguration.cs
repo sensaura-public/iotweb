@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IotWeb.Common.Util
 {
-    public class SessionStorageConfiguration
+    public class SessionConfiguration
     {
         #region Data Members
 
@@ -27,20 +27,20 @@ namespace IotWeb.Common.Util
         #region ctor
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SessionStorageConfiguration"/> class.
+        /// Initializes a new instance of the <see cref="SessionConfiguration"/> class.
         /// </summary>
-        public SessionStorageConfiguration()
+        public SessionConfiguration()
         {
             StoragePath = "";
             SessionTimeOut = 15;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SessionStorageConfiguration"/> class.
+        /// Initializes a new instance of the <see cref="SessionConfiguration"/> class.
         /// </summary>
         /// <param name="storagePath">The storage path.</param>
         /// <param name="sessionExpiredTime">The session expired time.</param>
-        public SessionStorageConfiguration(string storagePath, int sessionExpiredTime)
+        public SessionConfiguration(string storagePath, int sessionExpiredTime)
         {
             StoragePath = storagePath;
             SessionTimeOut = sessionExpiredTime;

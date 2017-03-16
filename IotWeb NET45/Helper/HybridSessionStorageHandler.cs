@@ -18,14 +18,14 @@ namespace IotWeb.Server.Helper
 {
     public class HybridSessionStorageHandler : ISessionStorageHandler
     {
-        private readonly SessionStorageConfiguration _sessionStorageConfiguration;
+        private readonly SessionConfiguration _sessionConfiguration;
         private const string StorageFolder = "IoTSession";
         private List<SessionCacheObject> _sessionDataCache;
         private readonly string _sessionFileExtension;
 
-        public HybridSessionStorageHandler(SessionStorageConfiguration sessionStorageConfiguration)
+        public HybridSessionStorageHandler(SessionConfiguration sessionConfiguration)
         {
-            _sessionStorageConfiguration = sessionStorageConfiguration;
+            _sessionConfiguration = sessionConfiguration;
             _sessionDataCache = new List<SessionCacheObject>();
             _sessionFileExtension = "sess";
             LoadSessionFiles();
@@ -63,7 +63,7 @@ namespace IotWeb.Server.Helper
                         _sessionDataCache.Where(
                             s =>
                                 s.LastAccessTime <
-                                DateTime.Now.AddMinutes(-_sessionStorageConfiguration.SessionTimeOut)).Select(s => s.SessionId).ToList();
+                                DateTime.Now.AddMinutes(-_sessionConfiguration.SessionTimeOut)).Select(s => s.SessionId).ToList();
 
                     _sessionDataCache.RemoveAll(s => sessionIds.Contains(s.SessionId));
                     
@@ -216,8 +216,8 @@ namespace IotWeb.Server.Helper
         {
             string fullStorageFilePath;
 
-            fullStorageFilePath = !string.IsNullOrWhiteSpace(_sessionStorageConfiguration.StoragePath)
-                ? _sessionStorageConfiguration.StoragePath
+            fullStorageFilePath = !string.IsNullOrWhiteSpace(_sessionConfiguration.StoragePath)
+                ? _sessionConfiguration.StoragePath
                 : Path.Combine(Application.LocalUserAppDataPath, StorageFolder);
 
             if (!Directory.Exists(fullStorageFilePath))

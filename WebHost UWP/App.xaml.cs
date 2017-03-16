@@ -59,7 +59,7 @@ namespace WebHost_UWP
             this.InitializeComponent();
             this.Suspending += OnSuspending;
             // Run the web server
-            m_server = new HttpServer(8000, new SessionStorageConfiguration());
+            m_server = new HttpServer(8000, new SessionConfiguration());
             m_server.AddHttpRequestHandler(
                 "/",
                 new HttpResourceHandler(

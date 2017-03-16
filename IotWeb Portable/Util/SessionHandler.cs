@@ -15,11 +15,12 @@ namespace IotWeb.Common.Util
         private Dictionary<string, string> _sessionData;
         private readonly ISessionStorageHandler _sessionStorageHandler;
         private bool _isChanged;
-        
+        internal bool IsSessionDestroyed { get; set; }
+
         internal string SessionId => _sessionId;
 
         internal bool IsChanged => _isChanged;
-
+        
         internal SessionHandler(string sessionId, ISessionStorageHandler sessionStorageHandler)
         {
             _sessionId = sessionId;
@@ -78,8 +79,9 @@ namespace IotWeb.Common.Util
 
             _sessionId = Utilities.GetNewSessionIdentifier();
             var isSaved = SaveSessionData();
-
-            return sessionTask.Result && isSaved;
+            
+            IsSessionDestroyed = sessionTask.Result && isSaved;
+            return IsSessionDestroyed;
         }
 
         public void SetSessionValue(string key, string value)
