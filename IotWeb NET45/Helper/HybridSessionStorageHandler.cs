@@ -28,8 +28,31 @@ namespace IotWeb.Server.Helper
             _sessionStorageConfiguration = sessionStorageConfiguration;
             _sessionDataCache = new List<SessionCacheObject>();
             _sessionFileExtension = "sess";
+            LoadSessionFiles();
         }
-        
+
+        private void LoadSessionFiles()
+        {
+            try
+            {
+                string[] files = Directory.GetFiles(GetStoragePath());
+
+                foreach (string file in files)
+                {
+                    var sessionData = File.ReadAllText(file);
+                    if (!string.IsNullOrEmpty(sessionData))
+                    {
+                        IDictionary<string, string> sessionDictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(sessionData);
+                        _sessionDataCache.Add(new SessionCacheObject(Path.GetFileNameWithoutExtension(file), DateTime.Now, sessionDictionary));
+                    }
+                }
+            }
+            catch (Exception)
+            {
+
+            }
+        }
+
         public async Task<bool> DeleteSessionsAsync()
         {
             try
@@ -43,20 +66,15 @@ namespace IotWeb.Server.Helper
                                 DateTime.Now.AddMinutes(-_sessionStorageConfiguration.SessionExpiredTime)).Select(s => s.SessionId);
 
                     _sessionDataCache.RemoveAll(s => sessionIds.Contains(s.SessionId));
-
-                    var path = GetStoragePath();
                     
-                    if (File.Exists(path))
+                    string[] files = Directory.GetFiles(GetStoragePath());
+
+                    var filesToDelete = files.Where(s => sessionIds.Contains(Path.GetFileNameWithoutExtension(s)));
+
+                    foreach (string file in filesToDelete)
                     {
-                        string[] files = Directory.GetFiles(GetStoragePath());
-
-                        var filesToDelete = files.Where(s => sessionIds.Contains(Path.GetFileNameWithoutExtension(s)));
-
-                        foreach (string file in filesToDelete)
-                        {
-                            FileInfo fi = new FileInfo(file);
-                            fi.Delete();
-                        }
+                        FileInfo fi = new FileInfo(file);
+                        fi.Delete();
                     }
                 });
 
@@ -113,7 +131,6 @@ namespace IotWeb.Server.Helper
                     if (sessionData != null)
                     {
                         data = (Dictionary<string, string>)sessionData.SessionData;
-                        sessionData.LastAccessTime = DateTime.Now;
                     }
                 });
 
@@ -131,27 +148,21 @@ namespace IotWeb.Server.Helper
 
             await Task.Run(() =>
             {
-                var path = GetStoragePath();
+                string[] files = Directory.GetFiles(GetStoragePath());
 
-                if (File.Exists(path))
+                foreach (string file in files)
                 {
-                    string[] files = Directory.GetFiles(GetStoragePath());
-
-                    foreach (string file in files)
+                    if (file.Contains(sessionId))
                     {
-                        if (file.Contains(sessionId))
+                        FileInfo fileInfo = new FileInfo(file);
+
+                        fileMetaData = new Dictionary<SessionAttributes, object>
                         {
-                            FileInfo fileInfo = new FileInfo(file);
-
-                            fileMetaData = new Dictionary<SessionAttributes, object>
-                            {
-                                {SessionAttributes.LastAccessTime, fileInfo.LastAccessTime},
-                                {SessionAttributes.Size, fileInfo.Length}
-                            };
-                            break;
-                        }
+                            {SessionAttributes.LastAccessTime, fileInfo.LastAccessTime},
+                            {SessionAttributes.Size, fileInfo.Length}
+                        };
+                        break;
                     }
-
                 }
             });
 
@@ -180,6 +191,18 @@ namespace IotWeb.Server.Helper
             {
                 return false;
             }
+        }
+
+        public bool UpdateSessionExpireTime(string sessionId)
+        {
+            var session = _sessionDataCache.FirstOrDefault(s => s.SessionId == sessionId);
+            if (session != null)
+            {
+                session.LastAccessTime = DateTime.Now;
+                return true;
+            }
+
+            return false;
         }
 
         private string GetStoragePath()

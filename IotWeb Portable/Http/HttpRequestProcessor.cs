@@ -145,55 +145,29 @@ namespace IotWeb.Common.Http
 				context = new HttpContext();
 
                 var sessionId = GetSessionIdentifier(request.Cookies);
+                var isNewRequest = string.IsNullOrEmpty(sessionId);
 
-                SessionHandler sessionHandler;
-                response = new HttpResponse();
-
-                if (string.IsNullOrEmpty(sessionId))
+                if (isNewRequest)
                 {
-                    var newSessionId = Utilities.GetNewSessionIdentifier();
+                    sessionId = Utilities.GetNewSessionIdentifier();
+                }
 
-                    sessionHandler = new SessionHandler(newSessionId, m_server.SessionStorageHandler);
-                    context.SessionHandler = sessionHandler;
+                SessionHandler sessionHandler = new SessionHandler(sessionId, m_server.SessionStorageHandler);
+                context.SessionHandler = sessionHandler;
 
-                    var clearSessionTask = sessionHandler.ClearExpiredSessions();
-                    clearSessionTask.Wait();
-
-                    var sessionSavedTask = sessionHandler.SaveSessionData();
-                    sessionSavedTask.Wait();
-                    var isSaved = sessionSavedTask.Result;
-                    
+                sessionHandler.UpdateSessionExpireTime();
+                sessionHandler.DestroyExpiredSessions();
+                
+                response = new HttpResponse();
+                
+                if (isNewRequest)
+                {   
+                    sessionHandler.SaveSessionData();
                     response.Cookies.Add(new Cookie(SessionName, context.SessionHandler.SessionId));
-
-                    if (isSaved)
-                    {
-
-                    }
-                    else
-                    {
-
-                    }
                 }
                 else
                 {
-                    sessionHandler = new SessionHandler(sessionId, m_server.SessionStorageHandler);
-                    context.SessionHandler = sessionHandler;
-
-                    var clearSessionTask = sessionHandler.ClearExpiredSessions();
-                    clearSessionTask.Wait();
-
-                    var sessionDataTask = sessionHandler.GetSessionData(sessionId);
-                    sessionDataTask.Wait();
-                    var isRetrieved = sessionDataTask.Result;
-
-                    if (isRetrieved)
-                    {
-
-                    }
-                    else
-                    {
-
-                    }
+                    sessionHandler.GetSessionData();
                 }
                 
                 // Apply filters
@@ -225,8 +199,7 @@ namespace IotWeb.Common.Http
 
                     if (sessionHandler.IsChanged)
                     {
-                        var sessionSavedTask = sessionHandler.SaveSessionData();
-                        sessionSavedTask.Wait();
+                        sessionHandler.SaveSessionData();
                     }
                 }
             }

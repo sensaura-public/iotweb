@@ -16,18 +16,11 @@ namespace IotWeb.Common.Util
         private readonly ISessionStorageHandler _sessionStorageHandler;
         private bool _isChanged;
         
+        internal string SessionId => _sessionId;
 
-        public string SessionId
-        {
-            get { return _sessionId; }
-        }
+        internal bool IsChanged => _isChanged;
 
-        public bool IsChanged
-        {
-            get { return _isChanged; }
-        }
-
-        public SessionHandler(string sessionId, ISessionStorageHandler sessionStorageHandler)
+        internal SessionHandler(string sessionId, ISessionStorageHandler sessionStorageHandler)
         {
             _sessionId = sessionId;
             _sessionData = new Dictionary<string, string>();
@@ -35,20 +28,25 @@ namespace IotWeb.Common.Util
             _isChanged = false;
         }
 
-        public async Task<bool> SaveSessionData()
+        internal bool SaveSessionData()
         {
-            var isSaved = await _sessionStorageHandler.SaveDataAsync(_sessionId, _sessionData);
+            var sessionTask = _sessionStorageHandler.SaveDataAsync(_sessionId, _sessionData);
+            sessionTask.Wait();
+            var isSaved = sessionTask.Result;
             _isChanged = false;
             return isSaved;
         }
 
-        public async Task<bool> GetSessionData(string sessionId)
+        internal bool GetSessionData()
         {
             try
             {
                 bool isRetrieved = false;
 
-                var sessionData = await _sessionStorageHandler.GetDataAsync(_sessionId);
+                var sessionTask = _sessionStorageHandler.GetDataAsync(_sessionId);
+                sessionTask.Wait();
+                
+                var sessionData = sessionTask.Result;
                 if (sessionData != null)
                 {
                     _sessionData = sessionData;
@@ -63,12 +61,14 @@ namespace IotWeb.Common.Util
             }
         }
 
-        public async Task<bool> ClearExpiredSessions()
+        internal bool DestroyExpiredSessions()
         {
-            return await _sessionStorageHandler.DeleteSessionsAsync();
+            var sessionTask = _sessionStorageHandler.DeleteSessionsAsync();
+            sessionTask.Wait();
+            return sessionTask.Result;
         }
 
-        public bool ClearAndDeleteSession()
+        public bool DestroySession()
         {
             _sessionData.Clear();
             _isChanged = false;
@@ -79,6 +79,7 @@ namespace IotWeb.Common.Util
 
         public void SetSessionValue(string key, string value)
         {
+            _isChanged = true;
             if (_sessionData.ContainsKey(key))
             {
                 _sessionData[key] = value;
@@ -91,13 +92,12 @@ namespace IotWeb.Common.Util
 
         public string GetSessionValue(string key)
         {
-            if (_sessionData.ContainsKey(key))
-            {
-                return _sessionData[key];
-            }
+            return _sessionData.ContainsKey(key) ? _sessionData[key] : null;
+        }
 
-            return null;
-
+        internal bool UpdateSessionExpireTime()
+        {
+            return _sessionStorageHandler.UpdateSessionExpireTime(SessionId);
         }
     }
 }

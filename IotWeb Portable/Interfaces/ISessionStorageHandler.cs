@@ -11,6 +11,6 @@ namespace IotWeb.Common.Interfaces
         Task<bool> DeleteSessionsAsync();
         Task<bool> DeleteSessionAsync(string sessionId);
         Task<Dictionary<SessionAttributes, object>> GetSessionMetadata(string sessionId);
-
+        bool UpdateSessionExpireTime(string sessionId);
     }
 }
