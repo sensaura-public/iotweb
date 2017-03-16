@@ -21,13 +21,7 @@ namespace IotWeb.Common.Util
         /// </summary>
         /// <value>The session expired time.</value>
         public int SessionExpiredTime { get; set; }
-
-        /// <summary>
-        /// Gets or sets the session file extension.
-        /// </summary>
-        /// <value>The session file extension.</value>
-        public string SessionFileExtension { get; set; }
-
+        
         #endregion
 
         #region ctor
@@ -39,7 +33,6 @@ namespace IotWeb.Common.Util
         {
             StoragePath = "";
             SessionExpiredTime = 15;
-            SessionFileExtension = "sess";
         }
 
         /// <summary>
@@ -47,12 +40,10 @@ namespace IotWeb.Common.Util
         /// </summary>
         /// <param name="storagePath">The storage path.</param>
         /// <param name="sessionExpiredTime">The session expired time.</param>
-        /// <param name="sessionFileExtension">The session file extension.</param>
-        public SessionStorageConfiguration(string storagePath, int sessionExpiredTime, string sessionFileExtension)
+        public SessionStorageConfiguration(string storagePath, int sessionExpiredTime)
         {
             StoragePath = storagePath;
             SessionExpiredTime = sessionExpiredTime;
-            SessionFileExtension = sessionFileExtension;
         }
 
         #endregion

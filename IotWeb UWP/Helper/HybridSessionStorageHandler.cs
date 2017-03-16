@@ -17,11 +17,13 @@ namespace IotWeb.Server.Helper
         private readonly SessionStorageConfiguration _sessionStorageConfiguration;
         private const string StorageFolder = "IoTSession";
         private List<SessionCacheObject> _sessionDataCache;
+        private readonly string _sessionFileExtension;
 
         public HybridSessionStorageHandler(SessionStorageConfiguration sessionStorageConfiguration)
         {
             _sessionStorageConfiguration = sessionStorageConfiguration;
             _sessionDataCache = new List<SessionCacheObject>();
+            _sessionFileExtension = "sess";
         }
         
         public async Task<bool> DeleteSessionsAsync()
@@ -198,9 +200,9 @@ namespace IotWeb.Server.Helper
 
             fullFilePath = Path.Combine(GetStoragePath(), fileName);
 
-            if (!string.IsNullOrWhiteSpace(_sessionStorageConfiguration.SessionFileExtension))
+            if (!string.IsNullOrWhiteSpace(_sessionFileExtension))
             {
-                fullFilePath = fullFilePath + "." + _sessionStorageConfiguration.SessionFileExtension;
+                fullFilePath = fullFilePath + "." + _sessionFileExtension;
             }
 
             return fullFilePath;
