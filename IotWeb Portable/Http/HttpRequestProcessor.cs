@@ -147,6 +147,7 @@ namespace IotWeb.Common.Http
                 var sessionId = GetSessionIdentifier(request.Cookies);
 
                 SessionHandler sessionHandler;
+                response = new HttpResponse();
 
                 if (string.IsNullOrEmpty(sessionId))
                 {
@@ -161,6 +162,8 @@ namespace IotWeb.Common.Http
                     var sessionSavedTask = sessionHandler.SaveSessionData();
                     sessionSavedTask.Wait();
                     var isSaved = sessionSavedTask.Result;
+                    
+                    response.Cookies.Add(new Cookie(SessionName, context.SessionHandler.SessionId));
 
                     if (isSaved)
                     {
@@ -192,24 +195,7 @@ namespace IotWeb.Common.Http
 
                     }
                 }
-
-                response = new HttpResponse();
-
-                Cookie sessionCookie = new Cookie
-                {
-                    Name = SessionName,
-                    Value = context.SessionHandler.SessionId
-                };
-
-                //servername = Lcase(Request.ServerVariables("SERVER_NAME"))
-                //Response.Status = "301 Moved Permanently"
-                //Response.AddHeader "Location", "http://yoursite"
-                //Response.AddHeader "Referer", servername
-                //Response.End()
-
-                response.Cookies.Add(sessionCookie);
-
-
+                
                 // Apply filters
                 if (m_server.ApplyBeforeFilters(request, response, context))
 				{
