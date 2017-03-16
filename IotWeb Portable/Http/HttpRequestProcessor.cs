@@ -155,7 +155,7 @@ namespace IotWeb.Common.Http
                 SessionHandler sessionHandler = new SessionHandler(sessionId, m_server.SessionStorageHandler);
                 context.SessionHandler = sessionHandler;
 
-                sessionHandler.UpdateSessionExpireTime();
+                sessionHandler.UpdateSessionTimeOut();
                 sessionHandler.DestroyExpiredSessions();
                 
                 response = new HttpResponse();

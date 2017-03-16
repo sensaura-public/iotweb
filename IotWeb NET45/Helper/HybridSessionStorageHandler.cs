@@ -63,13 +63,13 @@ namespace IotWeb.Server.Helper
                         _sessionDataCache.Where(
                             s =>
                                 s.LastAccessTime <
-                                DateTime.Now.AddMinutes(-_sessionStorageConfiguration.SessionExpiredTime)).Select(s => s.SessionId);
+                                DateTime.Now.AddMinutes(-_sessionStorageConfiguration.SessionTimeOut)).Select(s => s.SessionId).ToList();
 
                     _sessionDataCache.RemoveAll(s => sessionIds.Contains(s.SessionId));
                     
                     string[] files = Directory.GetFiles(GetStoragePath());
 
-                    var filesToDelete = files.Where(s => sessionIds.Contains(Path.GetFileNameWithoutExtension(s)));
+                    var filesToDelete = files.Where(s => sessionIds.Contains(Path.GetFileNameWithoutExtension(s))).ToList();
 
                     foreach (string file in filesToDelete)
                     {
@@ -98,16 +98,10 @@ namespace IotWeb.Server.Helper
                         _sessionDataCache.Remove(sessionData);
                     }
 
-                    string[] files = Directory.GetFiles(GetStoragePath());
-
-                    foreach (string file in files)
+                    if (File.Exists(GetFilePath(sessionId)))
                     {
-                        if (file.Contains(sessionId))
-                        {
-                            FileInfo fi = new FileInfo(file);
-                            fi.Delete();
-                            break;
-                        }
+                        FileInfo fi = new FileInfo(GetFilePath(sessionId));
+                        fi.Delete();
                     }
                 });
 
@@ -131,6 +125,19 @@ namespace IotWeb.Server.Helper
                     if (sessionData != null)
                     {
                         data = (Dictionary<string, string>)sessionData.SessionData;
+                    }
+                    else
+                    {
+                        if (File.Exists(GetFilePath(sessionId)))
+                        {
+                            var fileData = File.ReadAllText(GetFilePath(sessionId));
+                            if (!string.IsNullOrEmpty(fileData))
+                            {
+                                IDictionary<string, string> sessionDictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(fileData);
+                                _sessionDataCache.Add(new SessionCacheObject(sessionId, DateTime.Now, sessionDictionary));
+                                data = (Dictionary<string, string>)sessionDictionary;
+                            }
+                        }
                     }
                 });
 

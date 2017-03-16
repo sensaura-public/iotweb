@@ -20,7 +20,7 @@ namespace IotWeb.Common.Util
         /// Gets or sets the session expired time in minutes.
         /// </summary>
         /// <value>The session expired time.</value>
-        public int SessionExpiredTime { get; set; }
+        public int SessionTimeOut { get; set; }
         
         #endregion
 
@@ -32,7 +32,7 @@ namespace IotWeb.Common.Util
         public SessionStorageConfiguration()
         {
             StoragePath = "";
-            SessionExpiredTime = 15;
+            SessionTimeOut = 15;
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace IotWeb.Common.Util
         public SessionStorageConfiguration(string storagePath, int sessionExpiredTime)
         {
             StoragePath = storagePath;
-            SessionExpiredTime = sessionExpiredTime;
+            SessionTimeOut = sessionExpiredTime;
         }
 
         #endregion

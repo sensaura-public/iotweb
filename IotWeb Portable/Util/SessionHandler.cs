@@ -95,7 +95,7 @@ namespace IotWeb.Common.Util
             return _sessionData.ContainsKey(key) ? _sessionData[key] : null;
         }
 
-        internal bool UpdateSessionExpireTime()
+        internal bool UpdateSessionTimeOut()
         {
             return _sessionStorageHandler.UpdateSessionExpireTime(SessionId);
         }
