@@ -94,5 +94,20 @@ namespace IotWeb.Common.Http
             byte[] bytes = Encoding.UTF8.GetBytes(line + "\r\n");
             output.Write(bytes, 0, bytes.Length);
         }
-	}
+
+	    public void RedirectPermanently(string page)
+	    {
+	        this.ResponseCode = HttpResponseCode.MovedPermanently;
+            this.Headers.Add("Location", page);
+            this.Headers.Add("Referer", "server");
+        }
+
+	    public void RedirectTemporarily(string page)
+	    {
+            this.ResponseCode = HttpResponseCode.MovedTemporarily;
+            this.Headers.Add("Location", page);
+            this.Headers.Add("Referer", "server");
+        }
+
+    }
 }

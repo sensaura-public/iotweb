@@ -77,6 +77,17 @@ namespace IotWeb.Common.Util
             var sessionTask = _sessionStorageHandler.DeleteSessionAsync(SessionId);
             sessionTask.Wait();
 
+            return sessionTask.Result;
+        }
+
+        public bool DestroyAndCreateNewSession()
+        {
+            _sessionData.Clear();
+            _isChanged = false;
+
+            var sessionTask = _sessionStorageHandler.DeleteSessionAsync(SessionId);
+            sessionTask.Wait();
+
             _sessionId = Utilities.GetNewSessionIdentifier();
             var isSaved = SaveSessionData();
             

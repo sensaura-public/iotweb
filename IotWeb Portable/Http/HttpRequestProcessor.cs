@@ -76,7 +76,7 @@ namespace IotWeb.Common.Http
         /// <param name="input"></param>
         /// <param name="output"></param>
         public void ProcessHttpRequest(Stream input, Stream output)
-		{
+        {
             // Set up state
             HttpRequest request = null;
             HttpResponse response = null;
@@ -137,7 +137,7 @@ namespace IotWeb.Common.Http
 						Cookie c = new Cookie();
 						c.Name = parts[0].Trim();
 						if (parts.Length > 1)
-							c.Value = parts[1].Trim();
+							c.Value = parts[1].Trim();                        
 						request.Cookies.Add(c);
 					}
 				}
@@ -155,8 +155,12 @@ namespace IotWeb.Common.Http
                 SessionHandler sessionHandler = new SessionHandler(sessionId, m_server.SessionStorageHandler);
                 context.SessionHandler = sessionHandler;
 
-                sessionHandler.UpdateSessionTimeOut();
                 sessionHandler.DestroyExpiredSessions();
+
+                if (!isNewRequest)
+                {
+                    sessionHandler.UpdateSessionTimeOut();
+                }
                 
                 response = new HttpResponse();
                 
@@ -167,7 +171,15 @@ namespace IotWeb.Common.Http
                 }
                 else
                 {
-                    sessionHandler.GetSessionData();
+                    var isRetrieved = sessionHandler.GetSessionData();
+                    if (!isRetrieved)
+                    {
+                        sessionId = Utilities.GetNewSessionIdentifier();
+                        sessionHandler = new SessionHandler(sessionId, m_server.SessionStorageHandler);
+                        context.SessionHandler = sessionHandler;
+                        sessionHandler.SaveSessionData();
+                        response.Cookies.Add(new Cookie(SessionName, sessionHandler.SessionId));
+                    }
                 }
                 
                 // Apply filters
