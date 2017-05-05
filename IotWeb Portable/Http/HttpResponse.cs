@@ -99,14 +99,12 @@ namespace IotWeb.Common.Http
 	    {
 	        this.ResponseCode = HttpResponseCode.MovedPermanently;
             this.Headers.Add("Location", page);
-            this.Headers.Add("Referer", "server");
         }
 
 	    public void RedirectTemporarily(string page)
 	    {
             this.ResponseCode = HttpResponseCode.MovedTemporarily;
             this.Headers.Add("Location", page);
-            this.Headers.Add("Referer", "server");
         }
 
     }
