@@ -134,23 +134,19 @@ namespace IotWeb.Server.Helper
                     {
                         if (_sessionDataCache.ContainsKey(sessionId))
                         {
+                            _sessionDataCache[sessionId].LastAccessTime = DateTime.Now;
                             data = (Dictionary<string, string>)_sessionDataCache[sessionId].SessionData;
                         }
-                        else
+                        else if (File.Exists(GetFilePath(sessionId)))
                         {
-                            if (File.Exists(GetFilePath(sessionId)))
-                            {
-                                var fileData = File.ReadAllText(GetFilePath(sessionId));
-                                data = new Dictionary<string, string>();
+                            var fileData = File.ReadAllText(GetFilePath(sessionId));
+                            data = new Dictionary<string, string>();
 
-                                if (!string.IsNullOrEmpty(fileData))
-                                    data = JsonConvert.DeserializeObject<Dictionary<string, string>>(fileData);
+                            if (!string.IsNullOrEmpty(fileData))
+                                data = JsonConvert.DeserializeObject<Dictionary<string, string>>(fileData);
 
-                                _sessionDataCache[sessionId] = new SessionCacheObject(DateTime.Now, data);
-                            }
+                            _sessionDataCache[sessionId] = new SessionCacheObject(DateTime.Now, data);
                         }
-
-                        _sessionDataCache[sessionId].LastAccessTime = DateTime.Now;
                     }
                 });
 
