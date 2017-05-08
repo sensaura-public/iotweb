@@ -39,11 +39,11 @@ namespace IotWeb.Common.Util
         /// Initializes a new instance of the <see cref="SessionConfiguration"/> class.
         /// </summary>
         /// <param name="storagePath">The storage path.</param>
-        /// <param name="sessionExpiredTime">The session expired time.</param>
-        public SessionConfiguration(string storagePath, int sessionExpiredTime)
+        /// <param name="sessionTimeOut">Sets the session timeout in minutes.</param>
+        public SessionConfiguration(string storagePath, int sessionTimeOut)
         {
             StoragePath = storagePath;
-            SessionTimeOut = sessionExpiredTime;
+            SessionTimeOut = sessionTimeOut;
         }
 
         #endregion
