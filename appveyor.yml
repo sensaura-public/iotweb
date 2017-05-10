@@ -17,19 +17,31 @@ clone_folder: c:\projects\iotweb
 shallow_clone: true                 # default is "false"
 
 # build platform, i.e. x86, x64, Any CPU. This setting is optional.
-platform: ARM
+# platform: ARM
 
 # to add several platforms to build matrix:
-#platform:
-#  - x86
-#  - Any CPU
+platform:
+- x86
+- x64
+- ARM
 
 # build Configuration, i.e. Debug, Release, etc.
 configuration: Release
 
+assembly_info:
+  patch: true
+  file: '**\AssemblyInfo.*'
+  assembly_version: '{version}'
+  assembly_file_version: '{version}'
+  assembly_informational_version: '{version}'
+  
+before_build:
+- cmd: nuget restore
+
 # MSBuild
 build:
   project: IotWeb.sln
-  verbosity: normal
+  verbosity: minimal
+  parallel: true
   
 #test: off
