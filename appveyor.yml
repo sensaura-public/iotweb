@@ -34,9 +34,12 @@ assembly_info:
   assembly_version: '{version}'
   assembly_file_version: '{version}'
   assembly_informational_version: '{version}'
-  
+
+install:
+- appveyor DownloadFile https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
+
 before_build:
-- cmd: nuget restore -verbosity detailed -DisableParallelProcessing
+- cmd: appveyor-retry nuget restore IotWeb.sln -verbosity detailed -DisableParallelProcessing
 
 # MSBuild
 build:
