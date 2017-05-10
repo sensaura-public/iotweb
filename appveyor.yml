@@ -1,0 +1,50 @@
+version: 0.9.0.{build}
+branches:
+    only:
+      - master
+  
+# Build worker image (VM template)
+image: Visual Studio 2015
+
+# scripts that are called at very beginning, before repo cloning
+init:
+  - git config --global core.autocrlf input
+
+# clone directory
+clone_folder: c:\projects\iotweb
+
+# fetch repository as zip archive
+shallow_clone: true                 # default is "false"
+
+# build platform, i.e. x86, x64, Any CPU. This setting is optional.
+platform: AnyCPU
+
+# to add several platforms to build matrix:
+# platform:
+# - x86
+# - x64
+# - ARM
+
+# build Configuration, i.e. Debug, Release, etc.
+configuration: Release
+
+assembly_info:
+  patch: true
+  file: '**\AssemblyInfo.*'
+  assembly_version: '{version}'
+  assembly_file_version: '{version}'
+  assembly_informational_version: '{version}'
+
+install:
+- appveyor DownloadFile https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
+
+before_build:
+- cmd: appveyor-retry nuget restore IotWeb.sln -verbosity detailed -DisableParallelProcessing
+
+# MSBuild
+build:
+  project: IotWeb.sln
+  verbosity: minimal
+  parallel: true
+  
+#test: off
