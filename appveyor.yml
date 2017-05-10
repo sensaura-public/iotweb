@@ -17,7 +17,7 @@ clone_folder: c:\projects\iotweb
 shallow_clone: true                 # default is "false"
 
 # build platform, i.e. x86, x64, Any CPU. This setting is optional.
-platform: AnyCPU
+platform: x64
 
 # to add several platforms to build matrix:
 # platform:
