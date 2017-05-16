@@ -15,7 +15,6 @@ namespace IotWeb.Server.Helper
     public class HybridSessionStorageHandler : ISessionStorageHandler
     {
         private readonly SessionConfiguration _sessionConfiguration;
-        private const string StorageFolder = "IoTSession";
         private Dictionary<string, SessionCacheObject> _sessionDataCache;
         private readonly string _sessionFileExtension;
 
@@ -202,13 +201,11 @@ namespace IotWeb.Server.Helper
 
         private string GetStoragePath()
         {
-                string fullStorageFilePath = !string.IsNullOrWhiteSpace(_sessionConfiguration.StoragePath)
-                    ? _sessionConfiguration.StoragePath
-                    : Path.Combine(ApplicationData.Current.LocalFolder.Path, StorageFolder);
+                string fullStorageFilePath = Path.Combine(ApplicationData.Current.LocalFolder.Path, _sessionConfiguration.StorageFolder);
 
                 if (!Directory.Exists(fullStorageFilePath))
                     Directory.CreateDirectory(fullStorageFilePath);
-
+                
                 return fullStorageFilePath;
         }
 
@@ -218,7 +215,7 @@ namespace IotWeb.Server.Helper
 
             if (!string.IsNullOrWhiteSpace(_sessionFileExtension))
                 fullFilePath = fullFilePath + "." + _sessionFileExtension;
-
+            
             return fullFilePath;
         }
     }

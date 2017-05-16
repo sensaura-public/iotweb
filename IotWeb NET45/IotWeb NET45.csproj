@@ -53,13 +53,13 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\IotWeb Portable\IotWeb Portable.csproj">
-      <Project>{e788ca1a-9838-48a1-a961-1137e74eaf70}</Project>
-      <Name>IotWeb Portable</Name>
-    </ProjectReference>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <ProjectReference Include="..\IotWeb Portable\IotWeb Portable.csproj">
+      <Project>{E788CA1A-9838-48A1-A961-1137E74EAF70}</Project>
+      <Name>IotWeb Portable</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
