@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using IotWeb.Common.Interfaces;
 
 namespace IotWeb.Common.Util
 {
@@ -11,16 +12,16 @@ namespace IotWeb.Common.Util
         #region Data Members
 
         /// <summary>
-        /// Gets or sets the storage path for session files.
+        /// Gets the relative path of storage folder for session files.
         /// </summary>
-        /// <value>The storage path.</value>
-        public string StoragePath { get; set; }
+        /// <value>The storage folder name.</value>
+        public string StorageFolder { get; }
 
         /// <summary>
-        /// Gets or sets the session expired time in minutes.
+        /// Gets the session expired time in minutes.
         /// </summary>
         /// <value>The session expired time.</value>
-        public int SessionTimeOut { get; set; }
+        public uint SessionTimeOut { get; }
         
         #endregion
 
@@ -31,18 +32,21 @@ namespace IotWeb.Common.Util
         /// </summary>
         public SessionConfiguration()
         {
-            StoragePath = "";
+            StorageFolder = "IoTSession";
             SessionTimeOut = 15;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SessionConfiguration"/> class.
         /// </summary>
-        /// <param name="storagePath">The storage path.</param>
+        /// <param name="storageFolder">The relative path of storage folder for session files.</param>
         /// <param name="sessionTimeOut">Sets the session timeout in minutes.</param>
-        public SessionConfiguration(string storagePath, int sessionTimeOut)
+        public SessionConfiguration(string storageFolder, uint sessionTimeOut)
         {
-            StoragePath = storagePath;
+            if (string.IsNullOrWhiteSpace(storageFolder))
+                throw new ArgumentException("Storage folder can not be null, empty or white space.");
+            
+            StorageFolder = storageFolder;
             SessionTimeOut = sessionTimeOut;
         }
 
