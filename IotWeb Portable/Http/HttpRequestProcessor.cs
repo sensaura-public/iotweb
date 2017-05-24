@@ -143,6 +143,7 @@ namespace IotWeb.Common.Http
 				}
 				// We have at least a partial request, create the matching response
 				context = new HttpContext();
+                response = new HttpResponse();
 
                 var sessionId = GetSessionIdentifier(request.Cookies);
                 var isNewRequest = string.IsNullOrEmpty(sessionId);
@@ -161,8 +162,6 @@ namespace IotWeb.Common.Http
                 {
                     sessionHandler.UpdateSessionTimeOut();
                 }
-                
-                response = new HttpResponse();
                 
                 if (isNewRequest)
                 {   
