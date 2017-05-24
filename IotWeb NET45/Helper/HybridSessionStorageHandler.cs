@@ -8,9 +8,6 @@ using IotWeb.Common.Interfaces;
 using IotWeb.Common.Util;
 using System.Net.Mime;
 using System.Security.AccessControl;
-using Windows.Storage;
-
-using System.Windows.Forms;
 using IotWeb.Common.Http;
 using Newtonsoft.Json;
 
