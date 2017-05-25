@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace IotWeb.Common.Http
 {
-    public class HttpResourceHandler : IHttpRequestHandler
+    public class HttpResourceHandler : HttpHandlerBase
     {
         // Instance variables
         private Assembly m_assembly;
@@ -29,9 +29,9 @@ namespace IotWeb.Common.Http
             return resourceNs;
         }
 
-        public virtual void HandleRequest(string uri, HttpRequest request, HttpResponse response, HttpContext context)
+        public override void HandleRequest(string uri)
         {
-            if (request.Method != HttpMethod.Get)
+            if (Request.Method != HttpMethod.Get)
                 throw new HttpMethodNotAllowedException();
             // Replace '/' with '.' and special characters with _ to generate the resource name
             string resourceName = RequestToNamespace(uri);
@@ -55,8 +55,8 @@ namespace IotWeb.Common.Http
             if (resource == null)
                 throw new HttpNotFoundException();
             // Get the mime type and send the file
-            response.Headers[HttpHeaders.ContentType] = MimeType.FromExtension(resourceName);
-            resource.CopyTo(response.Content);
+            Response.Headers[HttpHeaders.ContentType] = MimeType.FromExtension(resourceName);
+            resource.CopyTo(Response.Content);
         }
     }
 }

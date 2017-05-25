@@ -1,5 +1,6 @@
 ﻿namespace IotWeb.Common.Http
 {
+
     /// <summary>
     /// Defines a request handler.
     /// 
@@ -8,13 +9,8 @@
     /// </summary>
     public interface IHttpRequestHandler
     {
-        /// <summary>
-        /// Handle a request
-        /// </summary>
-        /// <param name="uri"></param>
-        /// <param name="request"></param>
-        /// <param name="response"></param>
-        /// <param name="context"></param>
-        void HandleRequest(string uri, HttpRequest request, HttpResponse response, HttpContext context);
+        HttpRequest Request { get; }
+        HttpResponse Response { get; }
+        HttpContext Context { get; }
     }
 }

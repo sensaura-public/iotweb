@@ -8,19 +8,25 @@
       <string>e:\ssiprojects\aeiot_session\iotweb\webhost uwp\app.xaml.cs</string>
     </ArrayOfString>
     <ArrayOfString>
-      <string>e:\ssiprojects\aeiot_session\iotweb\iotweb portable\http\httprequestprocessor.cs</string>
-    </ArrayOfString>
-    <ArrayOfString>
-      <string>e:\ssiprojects\aeiot_session\iotweb\iotweb portable\http\basehttpserver.cs</string>
-    </ArrayOfString>
-    <ArrayOfString>
-      <string>e:\ssiprojects\aeiot_session\iotweb\iotweb portable\packages.config</string>
-    </ArrayOfString>
-    <ArrayOfString>
       <string>e:\ssiprojects\aeiot_session\iotweb\iotweb net45\httpserver.cs</string>
     </ArrayOfString>
     <ArrayOfString>
       <string>e:\ssiprojects\aeiot_session\iotweb\webhost desktop\program.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>E:\SSIProjects\AEIOT_Session\iotweb\IotWeb Portable\Util\SessionStorageConfiguration.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>E:\SSIProjects\AEIOT_Session\iotweb\IotWeb Portable\Util\SessionHandler.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>E:\SSIProjects\AEIOT_Session\iotweb\IotWeb Portable\packages.config</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>E:\SSIProjects\AEIOT_Session\iotweb\IotWeb Portable\Http\HttpRequestProcessor.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>E:\SSIProjects\AEIOT_Session\iotweb\IotWeb Portable\Http\BaseHttpServer.cs</string>
     </ArrayOfString>
   </ArrayOfArrayOfString>
 </ArrayOfArrayOfArrayOfString>

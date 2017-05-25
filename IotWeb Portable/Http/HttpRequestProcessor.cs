@@ -82,6 +82,8 @@ namespace IotWeb.Common.Http
             HttpResponse response = null;
             HttpException parseError = null;
 			HttpContext context = null;
+            SessionHandler sessionHandler = null;
+
             // Process the request
             try
             {
@@ -145,6 +147,7 @@ namespace IotWeb.Common.Http
 				context = new HttpContext();
                 response = new HttpResponse();
 
+                //Get session id from cookies
                 var sessionId = GetSessionIdentifier(request.Cookies);
                 var isNewRequest = string.IsNullOrEmpty(sessionId);
 
@@ -153,16 +156,12 @@ namespace IotWeb.Common.Http
                     sessionId = Utilities.GetNewSessionIdentifier();
                 }
 
-                SessionHandler sessionHandler = new SessionHandler(sessionId, m_server.SessionStorageHandler);
+                sessionHandler = new SessionHandler(sessionId, m_server.SessionStorageHandler);
                 context.SessionHandler = sessionHandler;
 
                 sessionHandler.DestroyExpiredSessions();
-
-                if (!isNewRequest)
-                {
-                    sessionHandler.UpdateSessionTimeOut();
-                }
                 
+                //Update session data
                 if (isNewRequest)
                 {   
                     sessionHandler.SaveSessionData();
@@ -170,6 +169,8 @@ namespace IotWeb.Common.Http
                 }
                 else
                 {
+                    sessionHandler.UpdateSessionTimeOut();
+
                     var isRetrieved = sessionHandler.GetSessionData();
                     if (!isRetrieved)
                     {
@@ -203,21 +204,12 @@ namespace IotWeb.Common.Http
 					}
 					// Dispatch to the handler
 					string partialUri;
-					IHttpRequestHandler handler = m_server.GetHandlerForUri(request.URI, out partialUri);
+					HttpHandlerBase handler = m_server.GetHandlerForUri(request.URI, out partialUri) as HttpHandlerBase;
 					if (handler == null)
 						throw new HttpNotFoundException();
-					handler.HandleRequest(partialUri, request, response, context);
 
-                    if (sessionHandler.IsChanged)
-                    {
-                        sessionHandler.SaveSessionData();
-                    }
-
-				    if (sessionHandler.IsSessionDestroyed)
-				    {
-				        sessionHandler.IsSessionDestroyed = false;
-                        response.Cookies.Add(new Cookie(SessionName, sessionHandler.SessionId));
-                    }
+                    handler.InitializeHttpHandlerBase(request, response, context);
+                    handler.HandleRequest(partialUri);
                 }
             }
             catch (HttpException ex)
@@ -237,12 +229,26 @@ namespace IotWeb.Common.Http
             }
 			// Apply the after filters here
 			m_server.ApplyAfterFilters(request, response, context);
-			// Write the response
+
+            //Update the session before sending the response
+            if (sessionHandler != null)
+            {
+                if (sessionHandler.IsChanged)
+                    sessionHandler.SaveSessionData();
+
+                if (sessionHandler.IsSessionDestroyed)
+                {
+                    sessionHandler.IsSessionDestroyed = false;
+                    response.Cookies.Add(new Cookie(SessionName, sessionHandler.SessionId));
+                }
+            }
+
+            // Write the response
             response.Send(output);
             output.Flush();
         }
-
-        #region Internal Implementation
+        
+	    #region Internal Implementation
 		/// <summary>
 		/// Check for an upgrade to a web socket connection.
 		/// </summary>
