@@ -129,7 +129,6 @@ namespace IotWeb.Common.Util
                     {
                         returnValue = JsonConvert.DeserializeObject<T>(_sessionData[key].ToString());
                         SetSessionValue(key, returnValue);
-                        _isChanged = false;
                     }
                     else
                     {
