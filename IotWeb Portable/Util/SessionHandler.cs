@@ -12,7 +12,7 @@ namespace IotWeb.Common.Util
     public class SessionHandler
     {
         private string _sessionId;
-        private Dictionary<string, string> _sessionData;
+        private Dictionary<string, object> _sessionData;
         private readonly ISessionStorageHandler _sessionStorageHandler;
         private bool _isChanged;
         internal bool IsSessionDestroyed { get; set; }
@@ -24,7 +24,7 @@ namespace IotWeb.Common.Util
         internal SessionHandler(string sessionId, ISessionStorageHandler sessionStorageHandler)
         {
             _sessionId = sessionId;
-            _sessionData = new Dictionary<string, string>();
+            _sessionData = new Dictionary<string, object>();
             _sessionStorageHandler = sessionStorageHandler;
             _isChanged = false;
         }
@@ -95,24 +95,60 @@ namespace IotWeb.Common.Util
             return IsSessionDestroyed;
         }
 
-        public void SetSessionValue(string key, string value)
+        public void SetSessionValue(string key, object value)
         {
-            _isChanged = true;
-            if (_sessionData.ContainsKey(key))
+            lock (_sessionData)
             {
-                _sessionData[key] = value;
-            }
-            else
-            {
-                _sessionData.Add(key, value);
+                _isChanged = true;
+
+                if (_sessionData.ContainsKey(key))
+                    _sessionData[key] = value;
+                else
+                    _sessionData.Add(key, value);
             }
         }
-
-        public string GetSessionValue(string key)
+        
+        public object GetSessionValue(string key)
         {
-            return _sessionData.ContainsKey(key) ? _sessionData[key] : null;
+            lock (_sessionData)
+            {
+                return _sessionData.ContainsKey(key) ? _sessionData[key] : null;
+            }
         }
+        
+        public T GetSessionValue<T>(string key) where T : class
+        {
+            lock (_sessionData)
+            {
+                var returnValue = default(T);
+                if (_sessionData.ContainsKey(key))
+                {
+                    var t = _sessionData[key].GetType();
 
+                    if (t.Name == "JObject")
+                    {
+                        returnValue = JsonConvert.DeserializeObject<T>(_sessionData[key].ToString());
+                        SetSessionValue(key, returnValue);
+                        _isChanged = false;
+                    }
+                    else
+                    {
+                        returnValue = _sessionData[key] as T;
+                    }
+                }
+
+                return returnValue;
+            }
+        }
+        
+        public T GetSessionStructValue<T>(string key) where T : struct
+        {
+            lock (_sessionData)
+            {
+                return _sessionData.ContainsKey(key) ? (T) Convert.ChangeType(_sessionData[key], typeof(T)) : default(T);
+            }
+        }
+        
         internal bool UpdateSessionTimeOut()
         {
             return _sessionStorageHandler.UpdateSessionExpireTime(SessionId);
