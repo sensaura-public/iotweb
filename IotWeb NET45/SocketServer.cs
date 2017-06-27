@@ -110,10 +110,17 @@ namespace IotWeb.Server
                                 catch (Exception)
                                 {
                                     // Quietly consume the exception
+				}
+				// Finally, we can close the socket
+                                try
+                                {
+                                    client.Shutdown(SocketShutdown.Both);
+				    client.Close();
                                 }
-                            // Finally, we can close the socket
-                            client.Shutdown(SocketShutdown.Both);
-                            client.Close();
+                                catch(Exception)
+                                {
+                                    // Quietly eat the exception
+                                }
                             });
                         }
                     }
