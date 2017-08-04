@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<ArrayOfArrayOfArrayOfString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <ArrayOfArrayOfString>
+    <ArrayOfString>
+      <string>e:\ssiprojects\aeiot_session\iotweb\iotweb portable\util\sessionhandler.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>e:\ssiprojects\aeiot_session\iotweb\iotweb net45\helper\hybridsessionstoragehandler.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>E:\SSIProjects\AEIOT_Session\iotweb\IotWeb UWP\Helper\HybridSessionStorageHandler.cs</string>
+    </ArrayOfString>
+  </ArrayOfArrayOfString>
+</ArrayOfArrayOfArrayOfString>

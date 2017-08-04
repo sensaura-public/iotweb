@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
+using IotWeb.Common.Interfaces;
 
 namespace IotWeb.Common.Http
 {
@@ -17,7 +18,19 @@ namespace IotWeb.Common.Http
 
 		public bool Running { get { return SocketServer.Running; } }
 
-		protected BaseHttpServer(ISocketServer server)
+        private ISessionStorageHandler _sessionStorageHandler;
+        public ISessionStorageHandler SessionStorageHandler
+        {
+            get { return _sessionStorageHandler; }
+        }
+
+        protected BaseHttpServer(ISocketServer server, ISessionStorageHandler sessionStorageHandler)
+            : this(server)
+        {
+            _sessionStorageHandler = sessionStorageHandler;
+        }
+
+        protected BaseHttpServer(ISocketServer server)
 		{
 			SocketServer = server;
 			SocketServer.ConnectionRequested = ConnectionRequested;

@@ -11,7 +11,8 @@
 		SwitchingProtocols,
 		Ok,
 		MovedPermanently,
-		SeeOther,
+        MovedTemporarily,
+        SeeOther,
 		BadRequest,
 		Unauthorized,
 		Forbidden,
@@ -36,6 +37,7 @@
 			101, // SwitchingProtocols
 			200, // Ok
 			301, // MovedPermanently
+            302, // MovedTemporarily
 			303, // SeeOther
 			400, // BadRequest
 			401, // Unauthorized
