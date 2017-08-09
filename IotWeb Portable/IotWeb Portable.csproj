@@ -38,7 +38,6 @@
     <Compile Include="Http\CaseInsensitiveDictionary.cs" />
     <Compile Include="Http\HttpContext.cs" />
     <Compile Include="Http\HttpException.cs" />
-    <Compile Include="Http\HttpHandlerBase.cs" />
     <Compile Include="Http\HttpHeaders.cs" />
     <Compile Include="Http\HttpMethod.cs" />
     <Compile Include="Http\HttpPDU.cs" />

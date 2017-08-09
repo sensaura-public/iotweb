@@ -9,8 +9,13 @@
     /// </summary>
     public interface IHttpRequestHandler
     {
-        HttpRequest Request { get; }
-        HttpResponse Response { get; }
-        HttpContext Context { get; }
+        /// <summary>
+        /// Handle a request
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="request"></param>
+        /// <param name="response"></param>
+        /// <param name="context"></param>
+        void HandleRequest(string uri, HttpRequest request, HttpResponse response, HttpContext context);
     }
 }
