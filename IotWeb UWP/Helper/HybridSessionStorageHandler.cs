@@ -28,24 +28,17 @@ namespace IotWeb.Server.Helper
 
         private void LoadSessionFiles()
         {
-            try
+            string[] files = Directory.GetFiles(GetStoragePath());
+
+            foreach (string file in files)
             {
-                string[] files = Directory.GetFiles(GetStoragePath());
+                var sessionData = File.ReadAllText(file);
+                IDictionary<string, object> sessionDictionary = new Dictionary<string, object>();
 
-                foreach (string file in files)
-                {
-                    var sessionData = File.ReadAllText(file);
-                    IDictionary<string, string> sessionDictionary = new Dictionary<string, string>();
-
-                    if (!string.IsNullOrEmpty(sessionData))
-                        sessionDictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(sessionData);
+                if (!string.IsNullOrEmpty(sessionData))
+                    sessionDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(sessionData);
                     
-                    _sessionDataCache[Path.GetFileNameWithoutExtension(file)] = new SessionCacheObject(DateTime.Now, sessionDictionary);
-                }
-            }
-            catch (Exception)
-            {
-
+                _sessionDataCache[Path.GetFileNameWithoutExtension(file)] = new SessionCacheObject(DateTime.Now, sessionDictionary);
             }
         }
         
@@ -117,11 +110,11 @@ namespace IotWeb.Server.Helper
             }
         }
 
-        public async Task<Dictionary<string, string>> GetDataAsync(string sessionId)
+        public async Task<Dictionary<string, object>> GetDataAsync(string sessionId)
         {
             try
             {
-                Dictionary<string, string> data = null;
+                Dictionary<string, object> data = null;
 
                 await Task.Run(() =>
                 {
@@ -130,15 +123,15 @@ namespace IotWeb.Server.Helper
                         if (_sessionDataCache.ContainsKey(sessionId))
                         {
                             _sessionDataCache[sessionId].LastAccessTime = DateTime.Now;
-                            data = (Dictionary<string, string>)_sessionDataCache[sessionId].SessionData;
+                            data = (Dictionary<string, object>)_sessionDataCache[sessionId].SessionData;
                         }
                         else if (File.Exists(GetFilePath(sessionId)))
                         {
                             var fileData = File.ReadAllText(GetFilePath(sessionId));
-                            data = new Dictionary<string, string>();
+                            data = new Dictionary<string, object>();
 
                             if (!string.IsNullOrEmpty(fileData))
-                                data = JsonConvert.DeserializeObject<Dictionary<string, string>>(fileData);
+                                data = JsonConvert.DeserializeObject<Dictionary<string, object>>(fileData);
 
                             _sessionDataCache[sessionId] = new SessionCacheObject(DateTime.Now, data);
                         }
@@ -158,7 +151,7 @@ namespace IotWeb.Server.Helper
             throw new NotImplementedException();
         }
 
-        public async Task<bool> SaveDataAsync(string sessionId, IDictionary<string, string> data)
+        public async Task<bool> SaveDataAsync(string sessionId, IDictionary<string, object> data)
         {
             try
             {
@@ -223,9 +216,9 @@ namespace IotWeb.Server.Helper
     public class SessionCacheObject
     {
         public DateTime LastAccessTime { get; set; }
-        public IDictionary<string, string> SessionData { get; set; }
+        public IDictionary<string, object> SessionData { get; set; }
 
-        public SessionCacheObject(DateTime lastAccessTime, IDictionary<string, string> sessionData)
+        public SessionCacheObject(DateTime lastAccessTime, IDictionary<string, object> sessionData)
         {     
             LastAccessTime = lastAccessTime;
             SessionData = sessionData;
