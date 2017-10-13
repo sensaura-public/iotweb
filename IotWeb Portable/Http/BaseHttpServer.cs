@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
+using IotWeb.Common.Interfaces;
 
 namespace IotWeb.Common.Http
 {
@@ -17,7 +18,19 @@ namespace IotWeb.Common.Http
 
 		public bool Running { get { return SocketServer.Running; } }
 
-		protected BaseHttpServer(ISocketServer server)
+        private ISessionStorageHandler _sessionStorageHandler;
+        public ISessionStorageHandler SessionStorageHandler
+        {
+            get { return _sessionStorageHandler; }
+        }
+
+        protected BaseHttpServer(ISocketServer server, ISessionStorageHandler sessionStorageHandler)
+            : this(server)
+        {
+            _sessionStorageHandler = sessionStorageHandler;
+        }
+
+        protected BaseHttpServer(ISocketServer server)
 		{
 			SocketServer = server;
 			SocketServer.ConnectionRequested = ConnectionRequested;
@@ -204,4 +217,15 @@ namespace IotWeb.Common.Http
 
 
 	}
+
+    /////////////////////////////////Changes done locally to fix HTTP 1.1 on Safari 10 websocket error on 22.11.2016/////////////////////
+    /// <summary>
+    /// Defines HTTP version
+    /// </summary>
+    public enum HttpVersion
+    {
+        Ver1_0,
+        Ver1_1
+    }
+    /////////////////////////////////Changes done locally to fix HTTP 1.1 on Safari 10 websocket error on 22.11.2016/////////////////////
 }

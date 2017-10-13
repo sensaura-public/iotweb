@@ -1,5 +1,6 @@
 ﻿namespace IotWeb.Common.Http
 {
+
     /// <summary>
     /// Defines a request handler.
     /// 

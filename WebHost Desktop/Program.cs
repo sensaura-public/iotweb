@@ -33,7 +33,7 @@ namespace WebHost.Desktop
         static void Main(string[] args)
 		{
             // Set up and run the server
-			HttpServer server = new HttpServer(8000);
+			HttpServer server = new HttpServer(8000, new SessionConfiguration());
             server.AddHttpRequestHandler(
                 "/",
                 new HttpResourceHandler(

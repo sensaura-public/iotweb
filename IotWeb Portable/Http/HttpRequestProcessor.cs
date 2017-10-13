@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using IotWeb.Common.Util;
+using Newtonsoft.Json;
 
 namespace IotWeb.Common.Http
 {
@@ -35,9 +38,10 @@ namespace IotWeb.Common.Http
 		private const int InputBufferSize = 1024;
 		private const byte CR = 0x0d;
 		private const byte LF = 0x0a;
+        private const string SessionName = "IoTSession";
 
-		// WebSocket header fields
-		private static string SecWebSocketKey = "Sec-WebSocket-Key";
+        // WebSocket header fields
+        private static string SecWebSocketKey = "Sec-WebSocket-Key";
 		private static string SecWebSocketProtocol = "Sec-WebSocket-Protocol";
 		private static string SecWebSocketVersion = "Sec-WebSocket-Version";
 		private static string SecWebSocketAccept = "Sec-WebSocket-Accept";
@@ -72,12 +76,14 @@ namespace IotWeb.Common.Http
         /// <param name="input"></param>
         /// <param name="output"></param>
         public void ProcessHttpRequest(Stream input, Stream output)
-		{
+        {
             // Set up state
             HttpRequest request = null;
             HttpResponse response = null;
             HttpException parseError = null;
 			HttpContext context = null;
+            SessionHandler sessionHandler = null;
+
             // Process the request
             try
             {
@@ -97,12 +103,25 @@ namespace IotWeb.Common.Http
                         throw new HttpRequestEntityTooLargeException();
                     // Read the data in
                     MemoryStream content = new MemoryStream();
+                    //23.08.2016 - Changes for supporting POST Method 
+                    int contentCopyCounter = 0;
+                    int bodyReadCount = 0;
                     while (m_connected && (content.Length != length))
                     {
-                        ReadData(input);
+                        if (contentCopyCounter > 0)
+                        {
+                            int bytesToRead = ((length - bodyReadCount) > InputBufferSize) ? InputBufferSize : (length - bodyReadCount);
+                            ReadData(input, bytesToRead);                            
+                        }
+
+                        bodyReadCount += m_index;
+
                         content.Write(m_buffer, 0, m_index);
                         ExtractBytes(m_index);
+                        contentCopyCounter++;
                     }
+                    //23.08.2016 - End of Changes for supporting POST Method
+
                     // Did the connection drop while reading?
                     if (!m_connected)
                         return;
@@ -120,15 +139,51 @@ namespace IotWeb.Common.Http
 						Cookie c = new Cookie();
 						c.Name = parts[0].Trim();
 						if (parts.Length > 1)
-							c.Value = parts[1].Trim();
+							c.Value = parts[1].Trim();                        
 						request.Cookies.Add(c);
 					}
 				}
 				// We have at least a partial request, create the matching response
 				context = new HttpContext();
-				response = new HttpResponse();
-				// Apply filters
-				if (m_server.ApplyBeforeFilters(request, response, context))
+                response = new HttpResponse();
+
+                //Get session id from cookies
+                var sessionId = GetSessionIdentifier(request.Cookies);
+                var isNewRequest = string.IsNullOrEmpty(sessionId);
+
+                if (isNewRequest)
+                {
+                    sessionId = Utilities.GetNewSessionIdentifier();
+                }
+
+                sessionHandler = new SessionHandler(sessionId, m_server.SessionStorageHandler);
+                context.SessionHandler = sessionHandler;
+
+                sessionHandler.DestroyExpiredSessions();
+                
+                //Update session data
+                if (isNewRequest)
+                {   
+                    sessionHandler.SaveSessionData();
+                    response.Cookies.Add(new Cookie(SessionName, sessionHandler.SessionId));
+                }
+                else
+                {
+                    sessionHandler.UpdateSessionTimeOut();
+
+                    var isRetrieved = sessionHandler.GetSessionData();
+                    if (!isRetrieved)
+                    {
+                        sessionId = Utilities.GetNewSessionIdentifier();
+                        sessionHandler = new SessionHandler(sessionId, m_server.SessionStorageHandler);
+                        context.SessionHandler = sessionHandler;
+                        sessionHandler.SaveSessionData();
+                        response.Cookies.Add(new Cookie(SessionName, sessionHandler.SessionId));
+                    }
+                }
+                
+                // Apply filters
+                if (m_server.ApplyBeforeFilters(request, response, context))
 				{
 					// Check for WebSocket upgrade
 					IWebSocketRequestHandler wsHandler = UpgradeToWebsocket(request, response);
@@ -136,8 +191,9 @@ namespace IotWeb.Common.Http
 					{
 						// Apply the after filters here
 						m_server.ApplyAfterFilters(request, response, context);
-						// Write the response back to accept the connection
-						response.Send(output);
+                        // Write the response back to accept the connection
+                        /////////////////////////////////Changes done locally to fix HTTP 1.1 on Safari 10 websocket error on 22.11.2016/////////////////////
+                        response.Send(output, HttpVersion.Ver1_1);
 						output.Flush();
 						// Now we can process the websocket
 						WebSocket ws = new WebSocket(input, output);
@@ -151,8 +207,8 @@ namespace IotWeb.Common.Http
 					IHttpRequestHandler handler = m_server.GetHandlerForUri(request.URI, out partialUri);
 					if (handler == null)
 						throw new HttpNotFoundException();
-					handler.HandleRequest(partialUri, request, response, context);
-				}
+                    handler.HandleRequest(partialUri, request, response, context);
+                }
             }
             catch (HttpException ex)
             {
@@ -171,12 +227,26 @@ namespace IotWeb.Common.Http
             }
 			// Apply the after filters here
 			m_server.ApplyAfterFilters(request, response, context);
-			// Write the response
+
+            //Update the session before sending the response
+            if (sessionHandler != null)
+            {
+                if (sessionHandler.IsChanged)
+                    sessionHandler.SaveSessionData();
+
+                if (sessionHandler.IsSessionDestroyed)
+                {
+                    sessionHandler.IsSessionDestroyed = false;
+                    response.Cookies.Add(new Cookie(SessionName, sessionHandler.SessionId));
+                }
+            }
+
+            // Write the response
             response.Send(output);
             output.Flush();
         }
-
-        #region Internal Implementation
+        
+	    #region Internal Implementation
 		/// <summary>
 		/// Check for an upgrade to a web socket connection.
 		/// </summary>
@@ -391,6 +461,35 @@ namespace IotWeb.Common.Http
             ReadData(input);
             return false;
 		}
-		#endregion
-	}
+
+        /// <summary>
+        /// 23.08.2016 - Changes for supporting POST Method - Added a new overload for reading the content data from the input stream
+		/// Read data from the stream into the buffer. 
+		/// </summary>
+		/// <param name="input"></param>
+        /// <param name="offset"></param>
+		/// <returns></returns>
+		private void ReadData(Stream input, int count)
+        {
+            try
+            {
+                int read = input.Read(m_buffer, 0, count);
+                m_index += read;
+                if (read == 0)
+                    m_connected = false;
+            }
+            catch (Exception exp)
+            {
+                // Any error causes the connection to close
+                m_connected = false;
+            }
+        }
+
+        private string GetSessionIdentifier(CookieCollection cookies)
+        {
+            return cookies[SessionName]?.Value;
+        }
+
+        #endregion
+    }
 }
